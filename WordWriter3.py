@@ -70,11 +70,9 @@ def replaceTableString(document, tag, replaceString):
 def replaceTextBoxString(document, tag, replaceString):
     children = document.element.body.iter()
     child_iters = []
-    t = []
     for child in children:
         if child.tag.endswith(("AlternateContent", "textbox")):
             for ci in child.iter():
-                t.append(ci.tag)
                 if ci.tag.endswith(("main}r", "main}pPr")):
                     child_iters.append(ci)
                     if ci.text != None:
