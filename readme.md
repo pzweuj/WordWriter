@@ -7,9 +7,6 @@ pip install pandas
 
 #### 使用方法
 ```python
-## python2
-import WordWriter
-
 ## python3
 import WordWriter3
 ```
@@ -19,6 +16,8 @@ import WordWriter3
 其中表格标签必须是#[TABLE-xxx]#，
 
 表格内容标签必须是#[TBS-xxx]#，
+
+文本框中内容标签必须是#[TX-xxx]#，
 
 图片标签必须是#[IMAGE-xxx]#，支持定义图片大小#[IMAGE-xxx-(30,40)]#，
 
@@ -31,48 +30,26 @@ import WordWriter3
 #### 实例
 test.docx是自定义模板。
 
-```python
-# python2
-import WordWriter
-
-# 定义一个字典放入所有内容
-testDict = {}
-testDict["#[HEADER-1]#"] = "模板测试"
-testDict["#[HEADER-2]#"] = "2019年7月18日"
-testDict["#[NAME]#"] = "测试模板"
-testDict["#[fullParagraph]#"] = "这是一段测试段落，通过WordWriter输入。"
-testDict["#[TBS-1]#"] = "未突变"
-testDict["#[FOOTER]#"] = "页脚测试"
-
-# 表格标签，图片标签指定的是文件，其中表格标签输入文件是以tab分割的文本，无标题
-testDict["#[TABLE-1]#"] = "testTable.txt"
-testDict["#[IMAGE-1-(30,30)]#"] = "testPicture.png"
-testDict["#[IMAGE-2]#"] = "testPicture.png"
-
-# 使用主函数进行报告填充
-WordWriter.WordWriter("test.docx", "testOut.docx", testDict)
-```
 
 python3
 
 ```python
-# python3
-import WordWriter3
+# # 测试脚本
+# testDict = {}
+# testDict["#[HEADER-1]#"] = "模板测试"
+# testDict["#[HEADER-2]#"] = "2019年7月18日"
+# testDict["#[NAME]#"] = "测试模板"
+# testDict["#[fullParagraph]#"] = "这是一段测试段落，通过WordWriter输入。"
+# testDict["#[TBS-1]#"] = "未突变"
+# testDict["#[TX-1]#"] = "文本框测试成功"
+# testDict["#[TX-2]#"] = "文本框测试很成功"
+# testDict["#[FOOTER]#"] = "页脚测试"
 
-# 定义一个字典放入所有内容
-testDict = {}
-testDict["#[HEADER-1]#"] = "模板测试"
-testDict["#[HEADER-2]#"] = "2019年7月18日"
-testDict["#[NAME]#"] = "测试模板"
-testDict["#[fullParagraph]#"] = "这是一段测试段落，通过WordWriter输入。"
-testDict["#[TBS-1]#"] = "未突变"
-testDict["#[FOOTER]#"] = "页脚测试"
+# # 此处输入的是文件路径
+# testDict["#[TABLE-1]#"] = "test/testTable.txt"
+# testDict["#[IMAGE-1-(30,30)]#"] = "test/testPicture.png"
+# testDict["#[IMAGE-2]#"] = "test/testPicture.png"
 
-# 表格标签，图片标签指定的是文件，其中表格标签输入文件是以tab分割的文本，无标题
-testDict["#[TABLE-1]#"] = "testTable.txt"
-testDict["#[IMAGE-1-(30,30)]#"] = "testPicture.png"
-testDict["#[IMAGE-2]#"] = "testPicture.png"
-
-# 使用主函数进行报告填充
-WordWriter3.WordWriter("test.docx", "testOut.docx", testDict)
+# # 使用主函数进行报告填充
+# WordWriter("test/test.docx", "test/testOut.docx", testDict)
 ```
