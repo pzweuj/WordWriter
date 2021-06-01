@@ -33,24 +33,24 @@ test.docx是自定义模板。
 python3
 
 ```python
-# # 测试脚本
-# testDict = {}
-# testDict["#[HEADER-1]#"] = "模板测试"
-# testDict["#[HEADER-2]#"] = "2019年7月18日"
-# testDict["#[NAME]#"] = "测试模板"
-# testDict["#[fullParagraph]#"] = "这是一段测试段落，通过WordWriter输入。"
-# testDict["#[TBS-1]#"] = "未突变"
-# testDict["#[TX-1]#"] = "文本框测试成功"
-# testDict["#[TX-2]#"] = "文本框测试很成功"
-# testDict["#[FOOTER]#"] = "页脚测试"
+# 测试脚本
+testDict = {}
+testDict["#[HEADER-1]#"] = "模板测试"
+testDict["#[HEADER-2]#"] = "2019年7月18日"
+testDict["#[NAME]#"] = "测试模板"
+testDict["#[fullParagraph]#"] = "这是一段测试段落，通过WordWriter输入。"
+testDict["#[TBS-1]#"] = "未突变"
+testDict["#[TX-1]#"] = "文本框测试成功"
+testDict["#[TX-2]#"] = "文本框测试很成功"
+testDict["#[FOOTER]#"] = "页脚测试"
 
-# # 此处输入的是文件路径
-# testDict["#[TABLE-1]#"] = "test/testTable.txt"
-# testDict["#[IMAGE-1-(30,30)]#"] = "test/testPicture.png"
-# testDict["#[IMAGE-2]#"] = "test/testPicture.png"
+# 此处输入的是文件路径
+testDict["#[TABLE-1]#"] = "test/testTable.txt"
+testDict["#[IMAGE-1-(30,30)]#"] = "test/testPicture.png"
+testDict["#[IMAGE-2]#"] = "test/testPicture.png"
 
-# # 使用主函数进行报告填充
-# WordWriter("test/test.docx", "test/testOut.docx", testDict)
+# 使用主函数进行报告填充
+WordWriter("test/test.docx", "test/testOut.docx", testDict)
 ```
 
 #### 注意事项
