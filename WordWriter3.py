@@ -1,6 +1,7 @@
 # coding=utf-8
 # pzw
-# 20210601
+# 20210607
+# v1.2 支持单元格中的图片插入，支持段落任意位置中的图片插入
 # v1.1 文本框中内容替换
 # v1.0 修正表格格式刷位置
 # v0.9 定位表格位置功能更新
@@ -84,14 +85,35 @@ def replaceTextBoxString(document, tag, replaceString):
 def insertPicture(document, tag, picturePath):
     for p in document.paragraphs:
         if tag in p.text:
-            replaceParagraphString(document, tag, " ")
-            run = p.runs[0]
-            if "(" in tag and ")" in tag:
-                width = int(tag.split("(")[1].split(",")[0])
-                height = int(tag.split(")")[0].split(",")[1])
-                run.add_picture(picturePath, width*100000, height*100000)
-            else:
-                run.add_picture(picturePath)
+            for run in p.runs:
+                if tag in run.text:
+                    run.text = run.text.replace(tag, "")
+                    if "(" in tag and ")" in tag:
+                        width = int(tag.split("(")[1].split(",")[0])
+                        height = int(tag.split(")")[0].split(",")[1])
+                        run.add_picture(picturePath, width*100000, height*100000)
+                    else:
+                        run.add_picture(picturePath)
+
+## 表格中的图片插入
+def insertTablePicture(document, tag, picturePath):
+    tables = document.tables
+    for t in tables:
+        rows = t.rows
+        for r in rows:
+            cells = r.cells
+            for c in cells:
+                paragraphs = c.paragraphs
+                for p in paragraphs:
+                    if tag in p.text:
+                        for run in p.runs:
+                            replaceTableString(document, tag, "")
+                            if "(" in tag and ")" in tag:
+                                width = int(tag.split("(")[1].split(",")[0])
+                                height = int(tag.split(")")[0].split(",")[1])
+                                run.add_picture(picturePath, width*100000, height*100000)
+                            else:
+                                run.add_picture(picturePath, width*100000, height*100000)
 
 
 ## 表格初始化
@@ -242,6 +264,10 @@ def WordWriter(inputDocx, outputDocx, replaceDict):
             print(i)
             replaceTableString(document, i, replaceDict[i])
 
+        elif "#[TBIMG" in i:
+            print(i)
+            insertTablePicture(document, i, replaceDict[i])
+
         elif "#[TX" in i:
             print(i)
             replaceTextBoxString(document, i, replaceDict[i])
@@ -259,21 +285,22 @@ def WordWriter(inputDocx, outputDocx, replaceDict):
             replaceParagraphString(document, i, replaceDict[i])
     document.save(outputDocx)
 
-# # 测试脚本
-# testDict = {}
-# testDict["#[HEADER-1]#"] = "模板测试"
-# testDict["#[HEADER-2]#"] = "2019年7月18日"
-# testDict["#[NAME]#"] = "测试模板"
-# testDict["#[fullParagraph]#"] = "这是一段测试段落，通过WordWriter输入。"
-# testDict["#[TBS-1]#"] = "未突变"
-# testDict["#[TX-1]#"] = "文本框测试成功"
-# testDict["#[TX-2]#"] = "文本框测试很成功"
-# testDict["#[FOOTER]#"] = "页脚测试"
+# 测试脚本
+testDict = {}
+testDict["#[HEADER-1]#"] = "模板测试"
+testDict["#[HEADER-2]#"] = "2019年7月18日"
+testDict["#[NAME]#"] = "测试模板"
+testDict["#[fullParagraph]#"] = "这是一段测试段落，通过WordWriter输入。"
+testDict["#[TBS-1]#"] = "未突变"
+testDict["#[TX-1]#"] = "文本框测试成功"
+testDict["#[TX-2]#"] = "文本框测试很成功"
+testDict["#[FOOTER]#"] = "页脚测试"
 
-# # 此处输入的是文件路径
-# testDict["#[TABLE-1]#"] = "test/testTable.txt"
-# testDict["#[IMAGE-1-(30,30)]#"] = "test/testPicture.png"
-# testDict["#[IMAGE-2]#"] = "test/testPicture.png"
+# 此处输入的是文件路径
+testDict["#[TABLE-1]#"] = "test/testTable.txt"
+testDict["#[IMAGE-1-(30,30)]#"] = "test/testPicture.png"
+testDict["#[IMAGE-2]#"] = "test/testPicture.png"
+testDict["#[TBIMG-3-(20,20)]#"] = "test/testPicture.png"
 
-# # 使用主函数进行报告填充
-# WordWriter("test/test.docx", "test/testOut.docx", testDict)
+# 使用主函数进行报告填充
+WordWriter("test/test.docx", "test/testOut.docx", testDict)
