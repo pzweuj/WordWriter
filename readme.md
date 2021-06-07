@@ -21,6 +21,8 @@ import WordWriter3
 
 图片标签必须是#[IMAGE-xxx]#，支持定义图片大小#[IMAGE-xxx-(30,40)]#，
 
+单元格中的图片标签必须是#[TBIMG-xxxx]#，支持定义图片格式大小#[TBIMG-xxxx-(30,40)]#，
+
 页眉标签必须是#[HEADER-xxx]#，页脚标签必须是#[FOOTER-xxx]#，
 
 其他文本内容标签可自定义#[xxxx]#。
@@ -48,6 +50,7 @@ testDict["#[FOOTER]#"] = "页脚测试"
 testDict["#[TABLE-1]#"] = "test/testTable.txt"
 testDict["#[IMAGE-1-(30,30)]#"] = "test/testPicture.png"
 testDict["#[IMAGE-2]#"] = "test/testPicture.png"
+testDict["#[TBIMG-3-(20,20)]#"] = "test/testPicture.png"
 
 # 使用主函数进行报告填充
 WordWriter("test/test.docx", "test/testOut.docx", testDict)
