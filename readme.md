@@ -4,8 +4,11 @@ pip install python-docx
 pip install pandas
 ```
 
+#### 详细说明
 
-#### 使用方法
+[详细说明](https://pzweuj.github.io/2021/06/07/WordWriter.html)
+
+#### 基本使用
 ```python
 ## python3
 import WordWriter3
