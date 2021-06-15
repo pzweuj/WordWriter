@@ -118,7 +118,7 @@ def insertTablePicture(document, tag, picturePath):
 
 ## 表格初始化
 def OriginTableReadyToFill(tableFile):
-    table = pd.read_csv(tableFile, header=None, sep="\t")
+    table = pd.read_csv(tableFile, header=None, sep="\t", dtype=str)
     return table
 
 ## 删除表格行
