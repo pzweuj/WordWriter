@@ -1,6 +1,7 @@
 # coding=utf-8
 # pzw
-# 20210607
+# 20210615
+# v1.3 修复一些bug，当图片tag内容为空时，不进行插入并清除tag
 # v1.2 支持单元格中的图片插入，支持段落任意位置中的图片插入
 # v1.1 文本框中内容替换
 # v1.0 修正表格格式刷位置
@@ -113,7 +114,7 @@ def insertTablePicture(document, tag, picturePath):
                                 height = int(tag.split(")")[0].split(",")[1])
                                 run.add_picture(picturePath, width*100000, height*100000)
                             else:
-                                run.add_picture(picturePath, width*100000, height*100000)
+                                run.add_picture(picturePath)
 
 
 ## 表格初始化
@@ -253,39 +254,45 @@ def WordWriter(inputDocx, outputDocx, replaceDict):
     document = Document(inputDocx)
     for i in replaceDict:
         if "#[TABLE" in i:
-            print(i)
+            # print(i)
             fillTable(document, i, replaceDict[i])
 
         elif "#[IMAGE" in i:
-            print(i)
-            insertPicture(document, i, replaceDict[i])
+            # print(i)
+            if replaceDict[i] == "":
+                replaceParagraphString(document, i, replaceDict[i])
+            else:
+                insertPicture(document, i, replaceDict[i])
 
         elif "#[TBS" in i:
-            print(i)
+            # print(i)
             replaceTableString(document, i, replaceDict[i])
 
         elif "#[TBIMG" in i:
-            print(i)
-            insertTablePicture(document, i, replaceDict[i])
+            # print(i)
+            if replaceDict[i] == "":
+                replaceTableString(document, i, replaceDict[i])
+            else:
+                insertTablePicture(document, i, replaceDict[i])
 
         elif "#[TX" in i:
-            print(i)
+            # print(i)
             replaceTextBoxString(document, i, replaceDict[i])
 
         elif "#[FOOTER" in i:
-            print(i)
+            # print(i)
             footer(document, i, replaceDict[i])
 
         elif "#[HEADER" in i:
-            print(i)
+            # print(i)
             header(document, i, replaceDict[i])
 
         else:
-            print(i)
+            # print(i)
             replaceParagraphString(document, i, replaceDict[i])
     document.save(outputDocx)
 
-# 测试脚本
+# # 测试脚本
 # testDict = {}
 # testDict["#[HEADER-1]#"] = "模板测试"
 # testDict["#[HEADER-2]#"] = "2019年7月18日"
@@ -296,11 +303,11 @@ def WordWriter(inputDocx, outputDocx, replaceDict):
 # testDict["#[TX-2]#"] = "文本框测试很成功"
 # testDict["#[FOOTER]#"] = "页脚测试"
 
-# 此处输入的是文件路径
+# # 此处输入的是文件路径
 # testDict["#[TABLE-1]#"] = "test/testTable.txt"
 # testDict["#[IMAGE-1-(30,30)]#"] = "test/testPicture.png"
 # testDict["#[IMAGE-2]#"] = "test/testPicture.png"
 # testDict["#[TBIMG-3-(20,20)]#"] = "test/testPicture.png"
 
-# 使用主函数进行报告填充
+# # 使用主函数进行报告填充
 # WordWriter("test/test.docx", "test/testOut.docx", testDict)
