@@ -1,6 +1,7 @@
 # coding=utf-8
 # pzw
-# 20210615
+# 20210616
+# v1.4 图片模块，当指定图片未找到时，以路径代替
 # v1.3 修复一些bug，当图片tag内容为空时，不进行插入并清除tag
 # v1.2 支持单元格中的图片插入，支持段落任意位置中的图片插入
 # v1.1 文本框中内容替换
@@ -14,6 +15,7 @@
 # v0.3 表格的插入，超链接的插入
 # v0.2 完成字符串替换，完成图片插入，完成表格中的字符串替换
 
+import os
 from docx import Document
 from docx.oxml.shared import OxmlElement
 from docx.oxml.shared import qn
@@ -88,13 +90,16 @@ def insertPicture(document, tag, picturePath):
         if tag in p.text:
             for run in p.runs:
                 if tag in run.text:
-                    run.text = run.text.replace(tag, "")
-                    if "(" in tag and ")" in tag:
-                        width = int(tag.split("(")[1].split(",")[0])
-                        height = int(tag.split(")")[0].split(",")[1])
-                        run.add_picture(picturePath, width*100000, height*100000)
+                    if os.path.exists(picturePath):
+                        run.text = run.text.replace(tag, "")
+                        if "(" in tag and ")" in tag:
+                            width = int(tag.split("(")[1].split(",")[0])
+                            height = int(tag.split(")")[0].split(",")[1])
+                            run.add_picture(picturePath, width*100000, height*100000)
+                        else:
+                            run.add_picture(picturePath)
                     else:
-                        run.add_picture(picturePath)
+                        run.text = run.text.replace(tag, picturePath)
 
 ## 表格中的图片插入
 def insertTablePicture(document, tag, picturePath):
@@ -108,13 +113,16 @@ def insertTablePicture(document, tag, picturePath):
                 for p in paragraphs:
                     if tag in p.text:
                         for run in p.runs:
-                            replaceTableString(document, tag, "")
-                            if "(" in tag and ")" in tag:
-                                width = int(tag.split("(")[1].split(",")[0])
-                                height = int(tag.split(")")[0].split(",")[1])
-                                run.add_picture(picturePath, width*100000, height*100000)
+                            if os.path.exists(picturePath):
+                                replaceTableString(document, tag, "")
+                                if "(" in tag and ")" in tag:
+                                    width = int(tag.split("(")[1].split(",")[0])
+                                    height = int(tag.split(")")[0].split(",")[1])
+                                    run.add_picture(picturePath, width*100000, height*100000)
+                                else:
+                                    run.add_picture(picturePath)
                             else:
-                                run.add_picture(picturePath)
+                                replaceTableString(document, tag, picturePath)
 
 
 ## 表格初始化
@@ -259,10 +267,7 @@ def WordWriter(inputDocx, outputDocx, replaceDict):
 
         elif "#[IMAGE" in i:
             # print(i)
-            if replaceDict[i] == "":
-                replaceParagraphString(document, i, replaceDict[i])
-            else:
-                insertPicture(document, i, replaceDict[i])
+            insertPicture(document, i, replaceDict[i])
 
         elif "#[TBS" in i:
             # print(i)
@@ -270,10 +275,7 @@ def WordWriter(inputDocx, outputDocx, replaceDict):
 
         elif "#[TBIMG" in i:
             # print(i)
-            if replaceDict[i] == "":
-                replaceTableString(document, i, replaceDict[i])
-            else:
-                insertTablePicture(document, i, replaceDict[i])
+            insertTablePicture(document, i, replaceDict[i])
 
         elif "#[TX" in i:
             # print(i)
