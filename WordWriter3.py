@@ -1,6 +1,7 @@
 # coding=utf-8
 # pzw
-# 20210616
+# 20210714
+# v1.5 修复一些bug
 # v1.4 图片模块，当指定图片未找到时，以路径代替
 # v1.3 修复一些bug，当图片tag内容为空时，不进行插入并清除tag
 # v1.2 支持单元格中的图片插入，支持段落任意位置中的图片插入
@@ -147,6 +148,7 @@ def fillTable(document, tag, insertTable):
     rowToFill = len(tableToFill)
     columnToFill = len(tableToFill.columns)
 
+    table_id = None
     for t in range(len(document.tables)):
         rows = document.tables[t].rows
         for r in range(len(rows)):
@@ -157,84 +159,87 @@ def fillTable(document, tag, insertTable):
                     table_id = t
                     row_id = r
                     cell_id = c
+    try:
+        table = document.tables[table_id]
 
-    table = document.tables[table_id]
+        # 格式刷
+        cellAlignmentList = []
+        for cell in table.rows[row_id].cells:
+            cellAlignmentList.append(cell.vertical_alignment)
 
-    # 格式刷
-    cellAlignmentList = []
-    for cell in table.rows[row_id].cells:
-        cellAlignmentList.append(cell.vertical_alignment)
+        styleList = []
+        for cell in table.rows[row_id].cells:
+            styleList.append(cell.paragraphs[0].style)
 
-    styleList = []
-    for cell in table.rows[row_id].cells:
-        styleList.append(cell.paragraphs[0].style)
+        alignmentList = []
+        for cell in table.rows[row_id].cells:
+            alignmentList.append(cell.paragraphs[0].alignment)
 
-    alignmentList = []
-    for cell in table.rows[row_id].cells:
-        alignmentList.append(cell.paragraphs[0].alignment)
+        boldList = []
+        for cell in table.rows[row_id].cells:
+            boldList.append(cell.paragraphs[0].runs[0].bold)
 
-    boldList = []
-    for cell in table.rows[row_id].cells:
-        boldList.append(cell.paragraphs[0].runs[0].bold)
+        italicList = []
+        for cell in table.rows[row_id].cells:
+            italicList.append(cell.paragraphs[0].runs[0].italic)
 
-    italicList = []
-    for cell in table.rows[row_id].cells:
-        italicList.append(cell.paragraphs[0].runs[0].italic)
+        fontNameList = []
+        for cell in table.rows[row_id].cells:
+            fontNameList.append(cell.paragraphs[0].runs[0].font.name)
 
-    fontNameList = []
-    for cell in table.rows[row_id].cells:
-        fontNameList.append(cell.paragraphs[0].runs[0].font.name)
+        fontSizeList = []
+        for cell in table.rows[row_id].cells:
+            fontSizeList.append(cell.paragraphs[0].runs[0].font.size)
 
-    fontSizeList = []
-    for cell in table.rows[row_id].cells:
-        fontSizeList.append(cell.paragraphs[0].runs[0].font.size)
+        colorList = []
+        for cell in table.rows[row_id].cells:
+            colorList.append(cell.paragraphs[0].runs[0].font.color.rgb)
 
-    colorList = []
-    for cell in table.rows[row_id].cells:
-        colorList.append(cell.paragraphs[0].runs[0].font.color.rgb)
+        highlight_colorList = []
+        for cell in table.rows[row_id].cells:
+            highlight_colorList.append(cell.paragraphs[0].runs[0].font.highlight_color)
 
-    highlight_colorList = []
-    for cell in table.rows[row_id].cells:
-        highlight_colorList.append(cell.paragraphs[0].runs[0].font.highlight_color)
+        # 判断行数是否足够，如果不够就添加
+        if len(table.rows) - row_id < rowToFill:
+            addRowAmount = rowToFill - len(table.rows) + row_id
+            for i in range(addRowAmount):
+                table.add_row()
 
-    # 判断行数是否足够，如果不够就添加
-    if len(table.rows) - row_id < rowToFill:
-        addRowAmount = rowToFill - len(table.rows) + row_id
-        for i in range(addRowAmount):
-            table.add_row()
+        # 填充内容
+        start = 0
+        while row_id <= rowToFill:
+            for co in range(columnToFill):
+                table.cell(row_id, co + cell_id).text = str(tableToFill.iloc[start, co])
+                table.cell(row_id, co + cell_id).paragraphs[0].style = styleList[co + cell_id]
+                table.cell(row_id, co + cell_id).paragraphs[0].alignment = alignmentList[co + cell_id]
 
-    # 填充内容
-    start = 0
-    while row_id <= rowToFill:
-        for co in range(columnToFill):
-            table.cell(row_id, co + cell_id).text = str(tableToFill.iloc[start, co])
-            table.cell(row_id, co + cell_id).paragraphs[0].style = styleList[co + cell_id]
-            table.cell(row_id, co + cell_id).paragraphs[0].alignment = alignmentList[co + cell_id]
+                for r in table.cell(row_id, co + cell_id).paragraphs[0].runs:
+                    r.bold = boldList[co + cell_id]
+                    r.italic = italicList[co + cell_id]
+                    r.font.name = fontNameList[co + cell_id]
+                    r.font.size = fontSizeList[co + cell_id]
+                    r.font.color.rgb = colorList[co + cell_id]
+                    r.font.highlight_color = highlight_colorList[co + cell_id]
 
-            for r in table.cell(row_id, co + cell_id).paragraphs[0].runs:
-                r.bold = boldList[co + cell_id]
-                r.italic = italicList[co + cell_id]
-                r.font.name = fontNameList[co + cell_id]
-                r.font.size = fontSizeList[co + cell_id]
-                r.font.color.rgb = colorList[co + cell_id]
-                r.font.highlight_color = highlight_colorList[co + cell_id]
+                table.cell(row_id, co + cell_id).vertical_alignment = cellAlignmentList[co + cell_id]
 
-            table.cell(row_id, co + cell_id).vertical_alignment = cellAlignmentList[co + cell_id]
+            start += 1
+            row_id += 1
 
-        start += 1
-        row_id += 1
+        # 删除表格空行
+        for row in table.rows:
+            pString = ""
+            for cell in row.cells:
+                for p in cell.paragraphs:
+                    pString = pString + p.text
 
-    # 删除表格空行
-    for row in table.rows:
-        pString = ""
-        for cell in row.cells:
-            for p in cell.paragraphs:
-                pString = pString + p.text
+            if pString == "":
+                remove_row(table, row)
 
-        if pString == "":
-            remove_row(table, row)
-
-    del tableToFill
+        del tableToFill
+    
+    except:
+        print("can not find", tag)
 
 
 ## 页脚
