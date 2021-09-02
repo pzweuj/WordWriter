@@ -1,6 +1,7 @@
 # coding=utf-8
 # pzw
-# 20210714
+# 20210902
+# v1.6 修复表格中的中文字体不跟随示例行
 # v1.5 修复一些bug
 # v1.4 图片模块，当指定图片未找到时，以路径代替
 # v1.3 修复一些bug，当图片tag内容为空时，不进行插入并清除tag
@@ -20,6 +21,7 @@ import os
 from docx import Document
 from docx.oxml.shared import OxmlElement
 from docx.oxml.shared import qn
+from docx.oxml.ns import qn as nsqn
 from docx.enum.dml import MSO_THEME_COLOR_INDEX
 from docx.opc.constants import RELATIONSHIP_TYPE
 import pandas as pd
@@ -217,6 +219,7 @@ def fillTable(document, tag, insertTable):
                     r.bold = boldList[co + cell_id]
                     r.italic = italicList[co + cell_id]
                     r.font.name = fontNameList[co + cell_id]
+                    r._element.rPr.rFonts.set(nsqn("w:eastAsia"), r.font.name)
                     r.font.size = fontSizeList[co + cell_id]
                     r.font.color.rgb = colorList[co + cell_id]
                     r.font.highlight_color = highlight_colorList[co + cell_id]
