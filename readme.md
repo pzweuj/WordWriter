@@ -10,7 +10,8 @@ pip install python-docx
 pip install pandas
 ```
 
-
+#### 详细描述
+使用方式点击[这里](https://pzweuj.github.io/2021/06/07/WordWriter.html)。
 
 #### 基本使用
 
@@ -59,5 +60,4 @@ ww.WordWriter("test.docx", "output.docx", resultsDict)
 ```
 
 #### 注意事项
-word中以**run**的形式储存每次的输入内容。如果输入不连贯，同一行文本会被分为不同的run。这会导致标签无法被正确识别。因此，建议将每个标签一次性的粘贴进模板中，再全选标签进行格式调整。
-可以通过把docx文件另存为xml文件，查看内容看标签是否完整。
+word中以**run**的形式储存每次的输入内容。如果输入不连贯，同一行文本会被分为不同的run。这会导致标签无法被正确识别。
