@@ -1,7 +1,7 @@
 # coding=utf-8
 # pzw
-# 20211028
-# v2.0
+# 20211103
+# v2.1 可选输出log
 
 import os
 import pandas as pd
@@ -188,14 +188,16 @@ def fillTable(table, row_id, cell_id, insertTable):
             remove_row(table, row)
 
 # 函数合并
-def WordWriter(inputDocx, outputDocx, replaceDict):
+def WordWriter(inputDocx, outputDocx, replaceDict, logs=True):
     template = Document(inputDocx)
     templateTagDict = searchTemplateTag(template)
     for k in replaceDict:
         if not k in templateTagDict:
-            print("【Missing Tag】 " + k)
+            if logs:
+                print("【Missing Tag】 " + k)
         else:
-            print("【Filling Tag】 " + k)
+            if logs:
+                print("【Filling Tag】 " + k)
             if "#[TABLE" in k:
                 for i in templateTagDict[k]:
                     fillTable(i[0], i[1], i[2], replaceDict[k])
