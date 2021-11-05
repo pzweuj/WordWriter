@@ -1,6 +1,7 @@
 # coding=utf-8
 # pzw
-# 20211103
+# 20211105
+# v2.2 兼容1.0版本的TBIMG tag
 # v2.1 可选输出log
 
 import os
@@ -204,7 +205,7 @@ def WordWriter(inputDocx, outputDocx, replaceDict, logs=True):
             elif "#[TX" in k:
                 for i in templateTagDict[k]:
                     replaceTextBoxString(i, replaceDict[k])
-            elif "#[IMAGE" in k:
+            elif "#[IMAGE" in k or "#[TBIMG" in k:
                 for i in templateTagDict[k]:
                     insertPicture(i[1], k, replaceDict[k])
             else:
