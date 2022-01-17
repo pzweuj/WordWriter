@@ -1,6 +1,7 @@
 # coding=utf-8
 # pzw
-# 20211105
+# 20220117
+# v2.3 修复表格标签放在第3行或以后，不能正常替换的bug
 # v2.2 兼容1.0版本的TBIMG tag
 # v2.1 可选输出log
 
@@ -158,7 +159,8 @@ def fillTable(table, row_id, cell_id, insertTable):
 
     # 填充内容
     start = 0
-    while row_id <= rowToFill:
+    run_row = row_id
+    while row_id <= rowToFill + run_row - 1:
         for co in range(columnToFill):
             tc = table.cell(row_id, co + cell_id)
             tc.text = str(tableToFill.iloc[start, co])
