@@ -164,7 +164,7 @@ def fillTable(table, row_id, cell_id, insertTable):
     while row_id <= rowToFill + run_row - 1:
         for co in range(columnToFill):
             tc = table.cell(row_id, co + cell_id)
-            tc.text = str(tableToFill.iloc[start, co]).replace("\x0a", "\n")
+            tc.text = str(tableToFill.iloc[start, co]).replace("\\x0a", "\n")
             tc.vertical_alignment = styleList[co][0]
             tc.paragraphs[0].style = styleList[co][1]
             tc.paragraphs[0].alignment = styleList[co][2]
