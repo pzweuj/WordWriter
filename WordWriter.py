@@ -1,6 +1,7 @@
 # coding=utf-8
 # pzw
-# 20220117
+# 20220121
+# v2.4 换行符处理，识别\x0a
 # v2.3 修复表格标签放在第3行或以后，不能正常替换的bug
 # v2.2 兼容1.0版本的TBIMG tag
 # v2.1 可选输出log
@@ -163,7 +164,7 @@ def fillTable(table, row_id, cell_id, insertTable):
     while row_id <= rowToFill + run_row - 1:
         for co in range(columnToFill):
             tc = table.cell(row_id, co + cell_id)
-            tc.text = str(tableToFill.iloc[start, co])
+            tc.text = str(tableToFill.iloc[start, co]).replace("\x0a", "\n")
             tc.vertical_alignment = styleList[co][0]
             tc.paragraphs[0].style = styleList[co][1]
             tc.paragraphs[0].alignment = styleList[co][2]
