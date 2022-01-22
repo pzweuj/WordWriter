@@ -17,7 +17,7 @@ pip install pandas
 
 ```python
 ## python3
-import WordWriter as ww
+from WordWriter import WordWriter
 ```
 
 在模板word中创建标签，形式为**#[xxxx]#**。
@@ -56,7 +56,7 @@ resultsDict["#[IMAGE-test2]#"] = "testPicture2.png"
 resultsDict["#[IMAGE-test3-(10,10)]#"] = "testPicture.png"
 resultsDict["#[TABLE-test1]#"] = "testTable.txt"
 
-ww.WordWriter("test.docx", "output.docx", resultsDict)
+WordWriter("test.docx", "output.docx", resultsDict)
 ```
 
 #### 注意事项
