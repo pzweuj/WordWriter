@@ -1,6 +1,7 @@
 # coding=utf-8
 # pzw
-# 20220121
+# 20220307
+# v2.5 识别#DELETETHISTABLE#来删除表格
 # v2.4 换行符处理，识别\x0a
 # v2.3 修复表格标签放在第3行或以后，不能正常替换的bug
 # v2.2 兼容1.0版本的TBIMG tag
@@ -191,6 +192,10 @@ def fillTable(table, row_id, cell_id, insertTable):
         if pString == "":
             remove_row(table, row)
 
+### 删除元素
+def remove_ele(ele):
+    ele._element.getparent().remove(ele._element)
+
 # 函数合并
 def WordWriter(inputDocx, outputDocx, replaceDict, logs=True):
     template = Document(inputDocx)
@@ -203,8 +208,12 @@ def WordWriter(inputDocx, outputDocx, replaceDict, logs=True):
             if logs:
                 print("【Filling Tag】 " + k)
             if "#[TABLE" in k:
-                for i in templateTagDict[k]:
-                    fillTable(i[0], i[1], i[2], replaceDict[k])
+                if replaceDict[k] == "#DELETETHISTABLE#":
+                    tableID = templateTagDict[k][0][0]
+                    remove_ele(tableID)
+                else:
+                    for i in templateTagDict[k]:
+                        fillTable(i[0], i[1], i[2], replaceDict[k])
             elif "#[TX" in k:
                 for i in templateTagDict[k]:
                     replaceTextBoxString(i, replaceDict[k])
