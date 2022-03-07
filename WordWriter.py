@@ -209,8 +209,9 @@ def WordWriter(inputDocx, outputDocx, replaceDict, logs=True):
                 print("【Filling Tag】 " + k)
             if "#[TABLE" in k:
                 if replaceDict[k] == "#DELETETHISTABLE#":
-                    tableID = templateTagDict[k][0][0]
-                    remove_ele(tableID)
+                    for i in replaceDict[k]:
+                        tableID = i[0]
+                        remove_ele(tableID)
                 else:
                     for i in templateTagDict[k]:
                         fillTable(i[0], i[1], i[2], replaceDict[k])
