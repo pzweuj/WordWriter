@@ -209,7 +209,7 @@ def WordWriter(inputDocx, outputDocx, replaceDict, logs=True):
                 print("【Filling Tag】 " + k)
             if "#[TABLE" in k:
                 if replaceDict[k] == "#DELETETHISTABLE#":
-                    for i in replaceDict[k]:
+                    for i in templateTagDict[k]:
                         tableID = i[0]
                         remove_ele(tableID)
                 else:
