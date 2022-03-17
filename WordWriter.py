@@ -1,6 +1,7 @@
 # coding=utf-8
 # pzw
-# 20220307
+# 20220317
+# v2.6 更新表格寻找tag的方式
 # v2.5 识别#DELETETHISTABLE#来删除表格
 # v2.4 换行符处理，识别\x0a
 # v2.3 修复表格标签放在第3行或以后，不能正常替换的bug
@@ -57,11 +58,12 @@ def searchTemplateTag(document):
                 cell = cells[c]
                 if "#[" in cell.text and "]#" in cell.text:
                     if "#[TABLE" in cell.text and "]#" in cell.text:
+                        tag = "#[TABLE-" + cell.text.split("#[TABLE-")[1].split("]#")[0] + "]#"
                         try:
-                            tagDict[cell.text.strip()].append([t, r, c])
+                            tagDict[tag].append([t, r, c])
                         except:
-                            tagDict[cell.text.strip()] = []
-                            tagDict[cell.text.strip()].append([t, r, c])
+                            tagDict[tag] = []
+                            tagDict[tag].append([t, r, c])
                     else:
                         searchTag(tagDict, cell.paragraphs)
 
