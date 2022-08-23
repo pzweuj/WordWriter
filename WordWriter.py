@@ -1,6 +1,7 @@
 # coding=utf-8
 # pzw
-# 20220317
+# 20220823
+# v2.7 行距保持
 # v2.6 更新表格寻找tag的方式
 # v2.5 识别#DELETETHISTABLE#来删除表格
 # v2.4 换行符处理，识别\x0a
@@ -149,9 +150,10 @@ def fillTable(table, row_id, cell_id, insertTable):
     styleList = []
     for cell in cellList:
         p0 = cell.paragraphs[0]
+        lineSpacingRule = p0.paragraph_format.line_spacing
         r0 = p0.runs[0]
         font = r0.font
-        styleList.append([cell.vertical_alignment, p0.style, p0.alignment, r0.bold, r0.italic, r0.underline, font.name, font.size, font.color.rgb, font.highlight_color])
+        styleList.append([cell.vertical_alignment, p0.style, p0.alignment, r0.bold, r0.italic, r0.underline, font.name, font.size, font.color.rgb, font.highlight_color, lineSpacingRule])
 
     # 判断行数是否足够，不够就添加
     if len(table.rows) - row_id < rowToFill:
@@ -171,6 +173,7 @@ def fillTable(table, row_id, cell_id, insertTable):
             tc.vertical_alignment = styleList[co][0]
             tc.paragraphs[0].style = styleList[co][1]
             tc.paragraphs[0].alignment = styleList[co][2]
+            tc.paragraphs[0].paragraph_format.line_spacing = styleList[co][10]
             r = tc.paragraphs[0].runs[0]
             r.bold = styleList[co][3]
             r.italic = styleList[co][4]
