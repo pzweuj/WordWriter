@@ -57,7 +57,7 @@ resultsDict["#[IMAGE-test2]#"] = "testPicture2.png"
 resultsDict["#[IMAGE-test3-(10,10)]#"] = "testPicture.png"
 resultsDict["#[TABLE-test1]#"] = "testTable.txt"
 
-WordWriter("test.docx", "output.docx", resultsDict)
+ww.WordWriter("test.docx", "output.docx", resultsDict)
 ```
 
 #### 注意事项
