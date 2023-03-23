@@ -1,6 +1,7 @@
 # coding=utf-8
 # pzw
-# 20220823
+# 20230323
+# v2.8 识别#DELETETHISPARAGRAPH#来删除段落
 # v2.7 行距保持
 # v2.6 更新表格寻找tag的方式
 # v2.5 识别#DELETETHISTABLE#来删除表格
@@ -108,6 +109,9 @@ def searchTemplateTag(document):
 ## 字符串替换，适用于表格单元格中的字符串/页眉页脚字符串/段落字符串
 def replaceParagraphString(run, replaceString):
     run.text = replaceString
+    if replaceString == "#DELETETHISPARAGRAPH#":
+        paragraph = run._element.getparent()
+        remove_ele(paragraph)
 
 ## 图片插入，适用于表格中的图片和段落中的图片
 def insertPicture(run, tag, picturePath):
@@ -199,7 +203,11 @@ def fillTable(table, row_id, cell_id, insertTable):
 
 ### 删除元素
 def remove_ele(ele):
-    ele._element.getparent().remove(ele._element)
+    if str(type(ele)) == "<class 'docx.oxml.text.paragraph.CT_P'>":
+        ele.getparent().remove(ele)
+    else:
+        parent = ele._element.getparent()
+        parent.remove(ele._element)
 
 # 函数合并
 def WordWriter(inputDocx, outputDocx, replaceDict, logs=True):
