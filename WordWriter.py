@@ -1,6 +1,7 @@
 # coding=utf-8
 # pzw
-# 20230323
+# 20230426
+# v2.9 识别#DELETETHISPARAGRAPH#来删除段落，同时适用于图片标签
 # v2.8 识别#DELETETHISPARAGRAPH#来删除段落
 # v2.7 行距保持
 # v2.6 更新表格寻找tag的方式
@@ -124,7 +125,11 @@ def insertPicture(run, tag, picturePath):
         else:
             run.add_picture(picturePath)
     else:
-        run.text = picturePath
+        if picturePath == "#DELETETHISPARAGRAPH#":
+            paragraph = run._element.getparent()
+            remove_ele(paragraph)
+        else:
+            run.text = picturePath
 
 ## 文本框中字符串替换，仅适合于文本框内字符串
 def replaceTextBoxString(childList, replaceString):
