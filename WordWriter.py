@@ -1,6 +1,7 @@
 # coding=utf-8
 # pzw
-# 20230426
+# 20230724
+# v2.10 保持表格最后一行的边框样式
 # v2.9 识别#DELETETHISPARAGRAPH#来删除段落，同时适用于图片标签
 # v2.8 识别#DELETETHISPARAGRAPH#来删除段落
 # v2.7 行距保持
@@ -15,11 +16,11 @@ import os
 import pandas as pd
 from docx import Document
 from docx.oxml.ns import qn as nsqn
+from docx.oxml import OxmlElement
 # from docx.enum.dml import MSO_THEME_COLOR_INDEX
 # from docx.opc.constants import RELATIONSHIP_TYPE
 # from docx.oxml.shared import OxmlElement
 # from docx.oxml.shared import qn
-
 
 # 通用搜索循环
 def searchTag(tagDict, paragraphs):
@@ -106,6 +107,61 @@ def searchTemplateTag(document):
 #     r.font.underline = True
 #     return hyperlink
 
+# 获得指定行号表格边框底线格式
+def get_table_bottom_border_details(tableObj, row_index, cell_index):    
+    # 获取表格的最后一行
+    last_row = tableObj.rows[row_index]
+    
+    # 获取最后一行中所有单元格的底线边框格式
+    bottom_border_details = []
+    for cell in last_row.cells[cell_index:]:
+        # 获取单元格的底线边框格式
+        tc_borders = cell._tc.get_or_add_tcPr().first_child_found_in("w:tcBorders")
+        bottom_border = tc_borders.find(nsqn("w:bottom"))
+
+        # 默认空样式
+        border_details = {
+            'size': '0',
+            'color': 'auto',
+            'space': '0',
+            'val': 'nil'
+        }
+
+        if bottom_border is not None:
+            border_details = {
+                'size': bottom_border.get(nsqn('w:sz'), '0'),
+                'color': bottom_border.get(nsqn('w:color'), 'auto'),
+                'space': bottom_border.get(nsqn('w:space'), '0'),
+                'val': bottom_border.get(nsqn('w:val'), 'single')
+            }
+        
+        bottom_border_details.append(border_details)
+
+    
+    return bottom_border_details
+
+# 设置单元格底线边框格式
+def set_cell_bottom_border(cell, styleList):
+    size = styleList["size"]
+    color = styleList["color"]
+    space = styleList["space"]
+    border_type = styleList["val"]
+    tcPr = cell._tc.get_or_add_tcPr()
+    tc_borders = tcPr.first_child_found_in("w:tcBorders")
+    if tc_borders == None:
+        tc_borders = OxmlElement("w:tcBorders")
+        tcPr.append(tc_borders)
+
+    bottom_border = tc_borders.find(nsqn("w:bottom"))
+    if bottom_border == None:
+        bottom_border = OxmlElement("w:bottom")
+    
+    # 设置底线边框的属性
+    bottom_border.set(nsqn('w:sz'), size)
+    bottom_border.set(nsqn('w:color'), color)
+    bottom_border.set(nsqn('w:space'), space)
+    bottom_border.set(nsqn('w:val'), border_type)
+    tc_borders.append(bottom_border)
 
 ## 字符串替换，适用于表格单元格中的字符串/页眉页脚字符串/段落字符串
 def replaceParagraphString(run, replaceString):
@@ -164,6 +220,19 @@ def fillTable(table, row_id, cell_id, insertTable):
         font = r0.font
         styleList.append([cell.vertical_alignment, p0.style, p0.alignment, r0.bold, r0.italic, r0.underline, font.name, font.size, font.color.rgb, font.highlight_color, lineSpacingRule])
 
+    # 获得标签行及最后一行的底边样式
+    tagBottomStyle = get_table_bottom_border_details(table, row_id, cell_id)
+    lastLineBottomStyle = get_table_bottom_border_details(table, -1, cell_id)
+
+    # 将当前的最后一行的底边样式先处理为正常格式
+    currentLastLine = table.rows[-1].cells[cell_id:]
+    if len(currentLastLine) != len(tagBottomStyle):
+        if len(tagBottomStyle) != 0:
+            set_cell_bottom_border(currentLastLine[c], tagBottomStyle[0])
+    else:
+        for c in range(len(currentLastLine)):
+            set_cell_bottom_border(currentLastLine[c], tagBottomStyle[c])
+
     # 判断行数是否足够，不够就添加
     if len(table.rows) - row_id < rowToFill:
         addRowAmount = rowToFill - len(table.rows) + row_id
@@ -206,6 +275,16 @@ def fillTable(table, row_id, cell_id, insertTable):
         if pString == "":
             remove_row(table, row)
 
+    # 处理此时最后一行的边框底线样式
+    newLastLine = table.rows[-1].cells[cell_id:]
+    if len(newLastLine) != len(lastLineBottomStyle):
+        if len(lastLineBottomStyle) != 0:
+            set_cell_bottom_border(newLastLine[c], lastLineBottomStyle[0])
+    else:
+        for c in range(len(newLastLine)):
+            set_cell_bottom_border(newLastLine[c], lastLineBottomStyle[c])
+    
+            
 ### 删除元素
 def remove_ele(ele):
     if str(type(ele)) == "<class 'docx.oxml.text.paragraph.CT_P'>":
