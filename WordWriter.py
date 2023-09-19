@@ -1,6 +1,7 @@
 # coding=utf-8
 # pzw
 # 20230919
+# v2.12 增加合并单元格的函数，因为这个功能比较常用
 # v2.11 修复bug，当表格跨页时也保持底边的样式
 # v2.10 保持表格最后一行的边框样式
 # v2.9 识别#DELETETHISPARAGRAPH#来删除段落，同时适用于图片标签
@@ -389,4 +390,36 @@ def WordWriter(inputDocx, outputDocx, replaceDict, logs=True):
                     replaceParagraphString(i[1], replaceDict[k])
     template.save(outputDocx)
 
+# 合并内容相同的行，这些行需要是排好序的
+def MergeTableRow(tableObj, colIndex, remove_other_row_text=True):
+    # 获得需要合并的行
+    rowLen = len(tableObj.rows)
+    mergeList = []
+    nowText = ""
+    mergeStartPoint = mergeEndPoint = 0
+    for i in range(rowLen):
+        currentText = tableObj.rows[i].cells[colIndex].text
+        if currentText != nowText:
+            if mergeEndPoint > mergeStartPoint:
+                mergeList.append([mergeStartPoint, mergeEndPoint])
+            mergeEndPoint = i - 1
+            mergeStartPoint = i
+            nowText = currentText
+        else:
+            mergeEndPoint = i
+    if mergeEndPoint > mergeStartPoint:
+        mergeList.append([mergeStartPoint, mergeEndPoint])
+
+    # 合并
+    for m in mergeList:
+        if remove_other_row_text:
+            for j in range(m[0], m[1] + 1):
+                cell = tableObj.cell(j, colIndex)
+                if j == m[0]:
+                    pass
+                else:
+                    cell.text = ""
+                    for p in cell.paragraphs:
+                        p.clear()
+        tableObj.cell(m[0], colIndex).merge(tableObj.cell(m[1], colIndex))
 
