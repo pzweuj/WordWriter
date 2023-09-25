@@ -1,6 +1,7 @@
 # coding=utf-8
 # pzw
-# 20230919
+# 20230925
+# v2.13 更新表格单元格中段落的style保持
 # v2.12 增加合并单元格的函数，因为这个功能比较常用
 # v2.11 修复bug，当表格跨页时也保持底边的样式
 # v2.10 保持表格最后一行的边框样式
@@ -157,25 +158,6 @@ def get_table_bottom_border_details(tableObj, row_index, cell_index):
     
     return bottom_border_details, tbl_border_details
 
-# 获得指定行号表格边框底线格式2
-def get_table_bottom_border_details2(tableObj, row_index, cell_index):
-    bottom_border_details = []
-
-    # 获取表格的最后一行
-    last_row = tableObj.rows[row_index]
-    bottom_border_format = None
-    for cell in last_row.cells[cell_index:]:
-        if bottom_border_format is None:
-            bottom_border_format = cell.bottom_border.__dict__.copy()
-        else:
-            for key, value in cell.bottom_border.__dict__.items():
-                if value is not None:
-                    bottom_border_format[key] = value
-
-        bottom_border_details.append(bottom_border_format)
-    
-    return bottom_border_details
-
 # 设置单元格底线边框格式
 def set_cell_bottom_border(cell, styleList):
     size = styleList["size"]
@@ -274,9 +256,10 @@ def fillTable(table, row_id, cell_id, insertTable):
     for cell in cellList:
         p0 = cell.paragraphs[0]
         lineSpacingRule = p0.paragraph_format.line_spacing
+        spaceAfter = p0.paragraph_format.space_after
         r0 = p0.runs[0]
         font = r0.font
-        styleList.append([cell.vertical_alignment, p0.style, p0.alignment, r0.bold, r0.italic, r0.underline, font.name, font.size, font.color.rgb, font.highlight_color, lineSpacingRule])
+        styleList.append([cell.vertical_alignment, p0.style, p0.alignment, r0.bold, r0.italic, r0.underline, font.name, font.size, font.color.rgb, font.highlight_color, lineSpacingRule, spaceAfter])
 
     # 获得标签行及最后一行的底边样式
     tagBottomStyle, tagTableStyle = get_table_bottom_border_details(table, row_id, cell_id)
@@ -310,6 +293,7 @@ def fillTable(table, row_id, cell_id, insertTable):
             tc.paragraphs[0].style = styleList[co][1]
             tc.paragraphs[0].alignment = styleList[co][2]
             tc.paragraphs[0].paragraph_format.line_spacing = styleList[co][10]
+            tc.paragraphs[0].paragraph_format.space_after = styleList[co][11]
             r = tc.paragraphs[0].runs[0]
             r.bold = styleList[co][3]
             r.italic = styleList[co][4]
