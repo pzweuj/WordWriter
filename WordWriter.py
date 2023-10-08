@@ -174,7 +174,7 @@ def set_table_bottom_border(table, styleList):
     if tbl_borders == None:
         tbl_borders = OxmlElement("w:tblBorders")
         tblPr.append(tbl_borders)
-    bottom_border = bottom_border = OxmlElement("w:bottom") if tbl_borders.find(nsqn("w:bottom")) == None else tbl_borders.find(nsqn("w:bottom"))
+    bottom_border = OxmlElement("w:bottom") if tbl_borders.find(nsqn("w:bottom")) == None else tbl_borders.find(nsqn("w:bottom"))
 
     # 设置底线边框的属性
     bottom_border.set(nsqn('w:sz'), size)
