@@ -1,6 +1,7 @@
 # coding=utf-8
 # pzw
-# 20230925
+# 20231008
+# v2.14 简洁语法
 # v2.13 更新表格单元格中段落的style保持
 # v2.12 增加合并单元格的函数，因为这个功能比较常用
 # v2.11 修复bug，当表格跨页时也保持底边的样式
@@ -33,11 +34,7 @@ def searchTag(tagDict, paragraphs):
         if "#[" in p.text and "]#" in p.text:
             for r in p.runs:
                 if "#[" in r.text and "]#" in r.text:
-                    try:
-                        tagDict[r.text.strip()].append([p, r])
-                    except:
-                        tagDict[r.text.strip()] = []
-                        tagDict[r.text.strip()].append([p, r])
+                    tagDict.setdefault(r.text.strip(), []).append([p, r])
 
 # 建立各类tag字典
 ## 遍历模板，从模板中寻找完整的tag
@@ -47,10 +44,7 @@ def searchTemplateTag(document):
     ### 页眉页脚
     sectionsList = []
     for s in document.sections:
-        sectionsList.append(s.header)
-        sectionsList.append(s.first_page_header)
-        sectionsList.append(s.footer)
-        sectionsList.append(s.first_page_footer)
+        sectionsList.extend([s.header, s.first_page_header, s.footer, s.first_page_footer])
     for sl in sectionsList:
         searchTag(tagDict, sl.paragraphs)
 
@@ -58,8 +52,7 @@ def searchTemplateTag(document):
     searchTag(tagDict, document.paragraphs)
 
     ### 表格
-    tables = document.tables
-    for t in tables:
+    for t in document.tables:
         rows = t.rows
         for r in range(len(rows)):
             cells = rows[r].cells
@@ -68,11 +61,7 @@ def searchTemplateTag(document):
                 if "#[" in cell.text and "]#" in cell.text:
                     if "#[TABLE" in cell.text and "]#" in cell.text:
                         tag = "#[TABLE-" + cell.text.split("#[TABLE-")[1].split("]#")[0] + "]#"
-                        try:
-                            tagDict[tag].append([t, r, c])
-                        except:
-                            tagDict[tag] = []
-                            tagDict[tag].append([t, r, c])
+                        tagDict.setdefault(tag, []).append([t, r, c])
                     else:
                         searchTag(tagDict, cell.paragraphs)
 
@@ -84,11 +73,7 @@ def searchTemplateTag(document):
                 if ci.tag.endswith(("main}r", "main}pPr")):
                     if ci.text != None:
                         if "#[TX" in ci.text and "]#" in ci.text:
-                            try:
-                                tagDict[ci.text.strip()].append(ci)
-                            except:
-                                tagDict[ci.text.strip()] = []
-                                tagDict[ci.text.strip()].append(ci)
+                            tagDict.setdefault(ci.text.strip(), []).append(ci)
     
     return tagDict
 
@@ -132,13 +117,10 @@ def get_table_bottom_border_details(tableObj, row_index, cell_index):
     for cell in last_row.cells[cell_index:]:
         # 获取单元格的底线边框格式
         tc_borders = cell._tc.get_or_add_tcPr().first_child_found_in("w:tcBorders")
-        if tc_borders == None:
-            bottom_border = None
-        else:
-            bottom_border = tc_borders.find(nsqn("w:bottom"))
+        bottom_border = tc_borders.find(nsqn("w:bottom")) if tc_borders != None else None
 
         # 默认空样式
-        border_details = {
+        default_border_details = {
             'size': '0',
             'color': 'auto',
             'space': '0',
@@ -152,6 +134,8 @@ def get_table_bottom_border_details(tableObj, row_index, cell_index):
                 'space': bottom_border.get(nsqn('w:space'), '0'),
                 'val': bottom_border.get(nsqn('w:val'), 'single'),
             }
+        else:
+            border_details = default_border_details
         
         bottom_border_details.append(border_details)
 
@@ -170,9 +154,7 @@ def set_cell_bottom_border(cell, styleList):
         tc_borders = OxmlElement("w:tcBorders")
         tcPr.append(tc_borders)
 
-    bottom_border = tc_borders.find(nsqn("w:bottom"))
-    if bottom_border == None:
-        bottom_border = OxmlElement("w:bottom")
+    bottom_border = OxmlElement("w:bottom") if tc_borders.find(nsqn("w:bottom")) == None else tc_borders.find(nsqn("w:bottom"))
     
     # 设置底线边框的属性
     bottom_border.set(nsqn('w:sz'), size)
@@ -192,9 +174,7 @@ def set_table_bottom_border(table, styleList):
     if tbl_borders == None:
         tbl_borders = OxmlElement("w:tblBorders")
         tblPr.append(tbl_borders)
-    bottom_border = tbl_borders.find(nsqn("w:bottom"))
-    if bottom_border == None:
-        bottom_border = OxmlElement("w:bottom")
+    bottom_border = bottom_border = OxmlElement("w:bottom") if tbl_borders.find(nsqn("w:bottom")) == None else tbl_borders.find(nsqn("w:bottom"))
 
     # 设置底线边框的属性
     bottom_border.set(nsqn('w:sz'), size)
@@ -212,7 +192,7 @@ def replaceParagraphString(run, replaceString):
 
 ## 图片插入，适用于表格中的图片和段落中的图片
 def insertPicture(run, tag, picturePath):
-    if os.path.exists(picturePath):
+    if os.path.isfile(picturePath):
         run.text = ""
         if "(" in tag and ")" in tag:
             width = int(tag.split("(")[1].split(",")[0])
@@ -399,9 +379,7 @@ def MergeTableRow(tableObj, colIndex, remove_other_row_text=True):
         if remove_other_row_text:
             for j in range(m[0], m[1] + 1):
                 cell = tableObj.cell(j, colIndex)
-                if j == m[0]:
-                    pass
-                else:
+                if j != m[0]:
                     cell.text = ""
                     for p in cell.paragraphs:
                         p.clear()
