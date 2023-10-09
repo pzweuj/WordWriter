@@ -9,6 +9,12 @@
 pip install python-docx
 pip install pandas
 ```
+### 安装
+
+```bash
+pip install WordWriter
+```
+
 
 #### 详细描述
 使用方式点击[这里](https://pzweuj.github.io/2023/10/09/WordWriter.html)。
