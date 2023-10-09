@@ -59,6 +59,3 @@ resultsDict["#[TABLE-test1]#"] = "testTable.txt"
 
 ww.WordWriter("test.docx", "output.docx", resultsDict)
 ```
-
-#### 注意事项
-word中以**run**的形式储存每次的输入内容。如果输入不连贯，同一行文本会被分为不同的run。这会导致标签无法被正确识别。
