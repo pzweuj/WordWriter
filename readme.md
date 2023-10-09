@@ -11,7 +11,7 @@ pip install pandas
 ```
 
 #### 详细描述
-使用方式点击[这里](https://pzweuj.github.io/2021/06/07/WordWriter.html)。
+使用方式点击[这里](https://pzweuj.github.io/2023/10/09/WordWriter.html)。
 
 #### 基本使用
 
