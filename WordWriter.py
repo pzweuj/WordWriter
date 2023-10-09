@@ -1,40 +1,46 @@
 # coding=utf-8
 # pzw
-# 20231008
-# v2.14 简洁语法
-# v2.13 更新表格单元格中段落的style保持
-# v2.12 增加合并单元格的函数，因为这个功能比较常用
-# v2.11 修复bug，当表格跨页时也保持底边的样式
-# v2.10 保持表格最后一行的边框样式
-# v2.9 识别#DELETETHISPARAGRAPH#来删除段落，同时适用于图片标签
-# v2.8 识别#DELETETHISPARAGRAPH#来删除段落
-# v2.7 行距保持
-# v2.6 更新表格寻找tag的方式
-# v2.5 识别#DELETETHISTABLE#来删除表格
-# v2.4 换行符处理，识别\x0a
-# v2.3 修复表格标签放在第3行或以后，不能正常替换的bug
-# v2.2 兼容1.0版本的TBIMG tag
-# v2.1 可选输出log
+# 20231009
+# v3.0 解决run不完整的问题
 
 import os
 import pandas as pd
 from docx import Document
 from docx.oxml.ns import qn as nsqn
 from docx.oxml import OxmlElement
-# from docx.oxml.ns import nsdecls
-# from docx.oxml import parse_xml
-# from docx.enum.dml import MSO_THEME_COLOR_INDEX
-# from docx.opc.constants import RELATIONSHIP_TYPE
-# from docx.oxml.shared import OxmlElement
-# from docx.oxml.shared import qn
 
 # 通用搜索循环
+## 形成的是类似{tag1: [p, r1, r2, r3], tag2: [p, r1]}这样的字典
 def searchTag(tagDict, paragraphs):
     for p in paragraphs:
         if "#[" in p.text and "]#" in p.text:
+            tag_name = ""
+            run_list = []
             for r in p.runs:
-                if "#[" in r.text and "]#" in r.text:
-                    tagDict.setdefault(r.text.strip(), []).append([p, r])
+                text = r.text.strip()
+                # 如果tag_name不为空以及不是终止
+                if tag_name and not "]#" in text:
+                    tag_name += text
+                    run_list.append(r)
+                else:
+                    # tag_name是空 或 是终止位
+                    if "#[" in text:
+                        # 此时是完整的tag
+                        if "]#" in text:
+                            tagDict.setdefault(text, []).append([p, r])
+                        # 此时仅仅是起始
+                        else:
+                            tag_name = text
+                            run_list = [r]
+                    elif "]#" in text:
+                        # tag_name不为空，同时是结束位置
+                        if tag_name:
+                            tag_name += text
+                            run_list.append(r)
+                            tagDict.setdefault(tag_name, []).append([p] + run_list)
+                            # 重新初始化
+                            tag_name = ""
+                            run_list = []
 
 # 建立各类tag字典
 ## 遍历模板，从模板中寻找完整的tag
@@ -63,9 +69,10 @@ def searchTemplateTag(document):
                         tag = "#[TABLE-" + cell.text.split("#[TABLE-")[1].split("]#")[0] + "]#"
                         tagDict.setdefault(tag, []).append([t, r, c])
                     else:
+                        # 单元格中的字符串tag
                         searchTag(tagDict, cell.paragraphs)
 
-    ### 文本框
+    ### 文本框，仅支持整个文本框中的内容替换
     children = document.element.body.iter()
     for child in children:
         if child.tag.endswith(("AlternateContent", "textbox")):
@@ -76,26 +83,6 @@ def searchTemplateTag(document):
                             tagDict.setdefault(ci.text.strip(), []).append(ci)
     
     return tagDict
-
-
-## 超链接
-# 功能是在一个段落后增加超链接，未找到文本替换的方法
-# 参考 https://stackoverflow.com/questions/47666642/adding-an-hyperlink-in-msword-by-using-python-docx
-# def add_hyperlink(paragraph, text, url):
-#     part = paragraph.part
-#     r_id = part.relate_to(url, RELATIONSHIP_TYPE.HYPERLINK, is_external=True)
-#     hyperlink = OxmlElement("w:hyperlink")
-#     hyperlink.set(qn("r:id"), r_id, )
-#     new_run = OxmlElement("w:r")
-#     rPr = OxmlElement("w:rPr")
-#     new_run.append(rPr)
-#     new_run.text = text
-#     hyperlink.append(new_run)
-#     r = paragraph.add_run()
-#     r._r.append(hyperlink)
-#     r.font.color.theme_color = MSO_THEME_COLOR_INDEX.HYPERLINK
-#     r.font.underline = True
-#     return hyperlink
 
 # 获得指定行号表格边框底线格式
 def get_table_bottom_border_details(tableObj, row_index, cell_index):    
@@ -136,10 +123,7 @@ def get_table_bottom_border_details(tableObj, row_index, cell_index):
             }
         else:
             border_details = default_border_details
-        
         bottom_border_details.append(border_details)
-
-    
     return bottom_border_details, tbl_border_details
 
 # 设置单元格底线边框格式
@@ -184,28 +168,34 @@ def set_table_bottom_border(table, styleList):
     tbl_borders.append(bottom_border)
 
 ## 字符串替换，适用于表格单元格中的字符串/页眉页脚字符串/段落字符串
-def replaceParagraphString(run, replaceString):
-    run.text = replaceString
+def replaceParagraphString(run_list, replaceString):
+    run_list[1].text = replaceString
+    for i, r in enumerate(run_list):
+        if not i in [0, 1]:
+            r.clear()
     if replaceString == "#DELETETHISPARAGRAPH#":
-        paragraph = run._element.getparent()
+        paragraph = run_list[1]._element.getparent()
         remove_ele(paragraph)
 
 ## 图片插入，适用于表格中的图片和段落中的图片
-def insertPicture(run, tag, picturePath):
+def insertPicture(run_list, tag, picturePath):
     if os.path.isfile(picturePath):
-        run.text = ""
+        run_list[1].text = ""
         if "(" in tag and ")" in tag:
             width = int(tag.split("(")[1].split(",")[0])
             height = int(tag.split(")")[0].split(",")[1])
-            run.add_picture(picturePath, width*100000, height*100000)
+            run_list[1].add_picture(picturePath, width*100000, height*100000)
         else:
-            run.add_picture(picturePath)
+            run_list[1].add_picture(picturePath)
     else:
         if picturePath == "#DELETETHISPARAGRAPH#":
-            paragraph = run._element.getparent()
+            paragraph = run_list[1]._element.getparent()
             remove_ele(paragraph)
         else:
-            run.text = picturePath
+            run_list[1].text = picturePath
+            for i, r in enumerate(run_list):
+                if not i in [0, 1]:
+                    r.clear()
 
 ## 文本框中字符串替换，仅适合于文本框内字符串
 def replaceTextBoxString(childList, replaceString):
@@ -224,6 +214,46 @@ def remove_row(table, row):
     tr = row._tr
     tbl.remove(tr)
 
+### 获取表格格式
+def table_style_list(table, rowIdx, cellIdx):
+    cell_list = table.rows[rowIdx].cells[cellIdx:]
+    style_list = []
+    for cell in cell_list:
+        p0 = cell.paragraphs[0]
+        lineSpacingRule = p0.paragraph_format.line_spacing
+        spaceAfter = p0.paragraph_format.space_after
+        r0 = p0.runs[0]
+        font = r0.font
+        style_list.append([cell.vertical_alignment, p0.style, p0.alignment, r0.bold, r0.italic, r0.underline, font.name, font.size, font.color.rgb, font.highlight_color, lineSpacingRule, spaceAfter])
+    return style_list
+
+### 表格内容填充及调整格式
+def fill_table_text_and_style(table, row_id, fill_table_id, fill_cell_id, fill_row_id, fill_col_id, style_list):
+    start = 0
+    run_row = row_id
+    while row_id <= fill_row_id + run_row - 1:
+        for co in range(fill_col_id):
+            tc = table.cell(row_id, co + fill_cell_id)
+            tc.text = str(fill_table_id.iloc[start, co]).replace("\\x0a", "\n")
+            tc.vertical_alignment = style_list[co][0]
+            tc.paragraphs[0].style = style_list[co][1]
+            tc.paragraphs[0].alignment = style_list[co][2]
+            tc.paragraphs[0].paragraph_format.line_spacing = style_list[co][10]
+            tc.paragraphs[0].paragraph_format.space_after = style_list[co][11]
+            r = tc.paragraphs[0].runs[0]
+            r.bold = style_list[co][3]
+            r.italic = style_list[co][4]
+            r.underline = False if style_list[co][5] != True else True
+            r.font.name = style_list[co][6]
+            if not r._element.rPr.rFonts == None:
+                r._element.rPr.rFonts.set(nsqn("w:eastAsia"), r.font.name)
+            r.font.size = style_list[co][7]
+            r.font.color.rgb = style_list[co][8]
+            r.font.highlight_color = style_list[co][9]
+
+        start += 1
+        row_id += 1
+
 ### 表格插入
 def fillTable(table, row_id, cell_id, insertTable):
     tableToFill = OriginTableReadyToFill(insertTable)
@@ -231,15 +261,7 @@ def fillTable(table, row_id, cell_id, insertTable):
     columnToFill = tableToFill.shape[1]
 
     # 格式刷
-    cellList = table.rows[row_id].cells[cell_id:]
-    styleList = []
-    for cell in cellList:
-        p0 = cell.paragraphs[0]
-        lineSpacingRule = p0.paragraph_format.line_spacing
-        spaceAfter = p0.paragraph_format.space_after
-        r0 = p0.runs[0]
-        font = r0.font
-        styleList.append([cell.vertical_alignment, p0.style, p0.alignment, r0.bold, r0.italic, r0.underline, font.name, font.size, font.color.rgb, font.highlight_color, lineSpacingRule, spaceAfter])
+    styleList = table_style_list(table, row_id, cell_id)
 
     # 获得标签行及最后一行的底边样式
     tagBottomStyle, tagTableStyle = get_table_bottom_border_details(table, row_id, cell_id)
@@ -263,30 +285,7 @@ def fillTable(table, row_id, cell_id, insertTable):
             i += 1
 
     # 填充内容
-    start = 0
-    run_row = row_id
-    while row_id <= rowToFill + run_row - 1:
-        for co in range(columnToFill):
-            tc = table.cell(row_id, co + cell_id)
-            tc.text = str(tableToFill.iloc[start, co]).replace("\\x0a", "\n")
-            tc.vertical_alignment = styleList[co][0]
-            tc.paragraphs[0].style = styleList[co][1]
-            tc.paragraphs[0].alignment = styleList[co][2]
-            tc.paragraphs[0].paragraph_format.line_spacing = styleList[co][10]
-            tc.paragraphs[0].paragraph_format.space_after = styleList[co][11]
-            r = tc.paragraphs[0].runs[0]
-            r.bold = styleList[co][3]
-            r.italic = styleList[co][4]
-            r.underline = False if styleList[co][5] != True else True
-            r.font.name = styleList[co][6]
-            if not r._element.rPr.rFonts == None:
-                r._element.rPr.rFonts.set(nsqn("w:eastAsia"), r.font.name)
-            r.font.size = styleList[co][7]
-            r.font.color.rgb = styleList[co][8]
-            r.font.highlight_color = styleList[co][9]
-
-        start += 1
-        row_id += 1
+    fill_table_text_and_style(table, row_id, tableToFill, cell_id, rowToFill, columnToFill, styleList)
     
     # 删除空行
     for row in table.rows:
@@ -351,7 +350,7 @@ def WordWriter(inputDocx, outputDocx, replaceDict, logs=True):
                     insertPicture(i[1], k, replaceDict[k])
             else:
                 for i in templateTagDict[k]:
-                    replaceParagraphString(i[1], replaceDict[k])
+                    replaceParagraphString(i, replaceDict[k])
     template.save(outputDocx)
 
 # 合并内容相同的行，这些行需要是排好序的
