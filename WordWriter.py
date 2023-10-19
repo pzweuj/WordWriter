@@ -1,7 +1,8 @@
 # coding=utf-8
 # pzw
-# 20231009
-# v3.0 解决run不完整的问题
+# 20231019
+# v3.0.3 修复部分bug
+# v3.0   解决run不完整的问题
 
 import os
 import pandas as pd
@@ -27,7 +28,7 @@ def searchTag(tagDict, paragraphs):
                     if "#[" in text:
                         # 此时是完整的tag
                         if "]#" in text:
-                            tagDict.setdefault(text, []).append([p, r])
+                            tagDict.setdefault(text, []).append([p, [r]])
                         # 此时仅仅是起始
                         else:
                             tag_name = text
@@ -37,7 +38,7 @@ def searchTag(tagDict, paragraphs):
                         if tag_name:
                             tag_name += text
                             run_list.append(r)
-                            tagDict.setdefault(tag_name, []).append([p] + run_list)
+                            tagDict.setdefault(tag_name, []).append([p, run_list])
                             # 重新初始化
                             tag_name = ""
                             run_list = []
@@ -169,32 +170,33 @@ def set_table_bottom_border(table, styleList):
 
 ## 字符串替换，适用于表格单元格中的字符串/页眉页脚字符串/段落字符串
 def replaceParagraphString(run_list, replaceString):
-    run_list[1].text = replaceString
+    run_list[0].text = replaceString
     for i, r in enumerate(run_list):
-        if not i in [0, 1]:
+        if i != 0:
             r.clear()
     if replaceString == "#DELETETHISPARAGRAPH#":
-        paragraph = run_list[1]._element.getparent()
+        paragraph = run_list[0]._element.getparent()
         remove_ele(paragraph)
 
 ## 图片插入，适用于表格中的图片和段落中的图片
 def insertPicture(run_list, tag, picturePath):
     if os.path.isfile(picturePath):
-        run_list[1].text = ""
+        for r in run_list:
+            r.text = ""
         if "(" in tag and ")" in tag:
             width = int(tag.split("(")[1].split(",")[0])
             height = int(tag.split(")")[0].split(",")[1])
-            run_list[1].add_picture(picturePath, width*100000, height*100000)
+            run_list[0].add_picture(picturePath, width*100000, height*100000)
         else:
-            run_list[1].add_picture(picturePath)
+            run_list[0].add_picture(picturePath)
     else:
         if picturePath == "#DELETETHISPARAGRAPH#":
-            paragraph = run_list[1]._element.getparent()
+            paragraph = run_list[0]._element.getparent()
             remove_ele(paragraph)
         else:
-            run_list[1].text = picturePath
+            run_list[0].text = picturePath
             for i, r in enumerate(run_list):
-                if not i in [0, 1]:
+                if i != 0:
                     r.clear()
 
 ## 文本框中字符串替换，仅适合于文本框内字符串
@@ -350,7 +352,7 @@ def WordWriter(inputDocx, outputDocx, replaceDict, logs=True):
                     insertPicture(i[1], k, replaceDict[k])
             else:
                 for i in templateTagDict[k]:
-                    replaceParagraphString(i, replaceDict[k])
+                    replaceParagraphString(i[1], replaceDict[k])
     template.save(outputDocx)
 
 # 合并内容相同的行，这些行需要是排好序的
@@ -383,4 +385,5 @@ def MergeTableRow(tableObj, colIndex, remove_other_row_text=True):
                     for p in cell.paragraphs:
                         p.clear()
         tableObj.cell(m[0], colIndex).merge(tableObj.cell(m[1], colIndex))
+
 
