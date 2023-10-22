@@ -1,67 +1,41 @@
-## 用途
-用于替换docx模板中的预留标签。支持替换段落字符串，单元格字符串，文本框字符串，页眉，页脚；插入表格，插入图片。
+## Intended Purpose
+To facilitate the substitution of reserved tags within a docx template. 
+
+This utility supports the replacement of paragraph strings, cell strings, text box strings, headers, and footers. 
+
+Furthermore, it enables the insertion of tables and images.
 
 
-
-#### 依赖
+### Requirements
 
 ```bash
 pip install python-docx
 pip install pandas
-```
-#### 安装
-
-```bash
-pip install WordWriter
-```
-
-
-#### 详细描述
-使用方式点击[这里](https://pzweuj.github.io/2023/10/09/WordWriter.html)。
-
-#### 基本使用
-
-```python
-## python3
-from WordWriter import WordWriter
-```
-
-在模板word中创建标签，形式为**#[xxxx]#**；
-
-其中表格标签必须是#[TABLE-xxx]#，可将内容指定为"#DELETETHISTABLE#"达到删除表格的效果。意味着表格个数不固定时，可以在模板中预先设定多个表格，在程序中删除。
-另外一个技巧是在进行第一次模板填充时将单元格内容改为表格tag，并再进行一次模板填充从而删除模板中未指定表格tag的表格；
-
-文本框中内容标签必须是#[TX-xxx]#；
-
-图片标签必须是#[IMAGE-xxx]#，支持定义图片大小#[IMAGE-xxx-(30,40)]#；
-
-其他文本内容标签，如段落字符串、单元格中的字符串、页眉、页脚等均可自定义#[xxxx]#。
-
-
-
-#### 实例
-
-test.docx是自定义模板。
-
-
 python3
+```
+
+### Basic Usage
 
 ```python
-# 测试脚本
-import WordWriter as ww
+from WordWriter import WordWriter
 
 resultsDict = {}
-resultsDict["#[testheader1]#"] = "测试页眉1"
-resultsDict["#[testheader2]#"] = "页眉测试2"
-resultsDict["#[testString]#"] = "，文本替换成功"
-resultsDict["#[testfooter]#"] = "测试页脚"
-resultsDict["#[TX-testString2]#"] = "，文本框文本替换成功"
-resultsDict["#[testTableString1]#"] = "单元格文本替换成功"
-resultsDict["#[testTableString2]#"] = "单元格文本替换成功"
+resultsDict["#[testheader1]#"] = "test header 1"
+resultsDict["#[testheader2]#"] = "test header 2"
+resultsDict["#[testString]#"] = "test strings"
+resultsDict["#[testfooter]#"] = "test footer"
+resultsDict["#[TX-testString2]#"] = "text box strings"
+resultsDict["#[testTableString1]#"] = "cell text 1"
+resultsDict["#[testTableString2]#"] = "cell text 2"
 resultsDict["#[IMAGE-test1-(30,30)]#"] = "testPicture.png"
 resultsDict["#[IMAGE-test2]#"] = "testPicture2.png"
 resultsDict["#[IMAGE-test3-(10,10)]#"] = "testPicture.png"
 resultsDict["#[TABLE-test1]#"] = "testTable.txt"
 
-ww.WordWriter("test.docx", "output.docx", resultsDict)
+WordWriter("test.docx", "output.docx", resultsDict)
 ```
+
+### Document
+
+[Click here!](https://pzweuj.github.io/2023/10/09/WordWriter.html)
+
