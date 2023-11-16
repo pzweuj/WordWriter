@@ -1,6 +1,7 @@
 # coding=utf-8
 # pzw
 # 20231019
+# v3.1   修复bottom无法找到border的问题
 # v3.0.3 修复部分bug
 # v3.0   解决run不完整的问题
 
@@ -90,15 +91,26 @@ def get_table_bottom_border_details(tableObj, row_index, cell_index):
     # 获取表格的指定行号
     last_row = tableObj.rows[row_index]
 
+    # 默认空样式
+    ## val: single 实线；dashed 虚线；nil 隐藏
+    default_border_details = {
+        'size': '0',
+        'color': 'auto',
+        'space': '0',
+        'val': 'single'
+    }
+
     # 获取表格的边框格式
     tbl_borders = tableObj._tbl.tblPr.first_child_found_in("w:tblBorders")
-    tbl_bottom_border = tbl_borders.find(nsqn("w:bottom"))
-    tbl_border_details = {
-        'size': tbl_bottom_border.get(nsqn('w:sz'), '0'),
-        'color': tbl_bottom_border.get(nsqn('w:color'), 'auto'),
-        'space': tbl_bottom_border.get(nsqn('w:space'), '0'),
-        'val': tbl_bottom_border.get(nsqn('w:val'), 'single'),
-    }
+    if tbl_borders:
+        tbl_bottom_border = tbl_borders.find(nsqn("w:bottom"))
+        tbl_border_details = {
+            'size': tbl_bottom_border.get(nsqn('w:sz'), '0'),
+            'color': tbl_bottom_border.get(nsqn('w:color'), 'auto'),
+            'space': tbl_bottom_border.get(nsqn('w:space'), '0'),
+            'val': tbl_bottom_border.get(nsqn('w:val'), 'single'),
+        }
+    tbl_border_details = default_border_details
 
     # 获取指定行号中所有单元格的底线边框格式
     bottom_border_details = []
@@ -106,15 +118,6 @@ def get_table_bottom_border_details(tableObj, row_index, cell_index):
         # 获取单元格的底线边框格式
         tc_borders = cell._tc.get_or_add_tcPr().first_child_found_in("w:tcBorders")
         bottom_border = tc_borders.find(nsqn("w:bottom")) if tc_borders != None else None
-
-        # 默认空样式
-        default_border_details = {
-            'size': '0',
-            'color': 'auto',
-            'space': '0',
-            'val': 'nil'
-        }
-
         if bottom_border is not None:
             border_details = {
                 'size': bottom_border.get(nsqn('w:sz'), '0'),
