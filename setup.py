@@ -8,7 +8,7 @@ with open('README.md', 'r', encoding='utf-8') as readme_file:
     long_description = readme_file.read()
 
 setup(name='WordWriter',
-    version = '3.1',
+    version = '3.1.1',
     description = 'Docx file template replacing',
     long_description = long_description,
     long_description_content_type =' text/markdown',
