@@ -110,7 +110,8 @@ def get_table_bottom_border_details(tableObj, row_index, cell_index):
             'space': tbl_bottom_border.get(nsqn('w:space'), '0'),
             'val': tbl_bottom_border.get(nsqn('w:val'), 'single'),
         }
-    tbl_border_details = default_border_details
+    else:
+        tbl_border_details = default_border_details
 
     # 获取指定行号中所有单元格的底线边框格式
     bottom_border_details = []
