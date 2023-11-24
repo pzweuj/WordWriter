@@ -331,8 +331,6 @@ def WordWriter(inputDocx, outputDocx, replaceDict, logs=True):
     template = Document(inputDocx)
     templateTagDict = searchTemplateTag(template)
 
-    print(templateTagDict)
-
     for k in replaceDict:
         if not k in templateTagDict:
             if logs:
