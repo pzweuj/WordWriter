@@ -1,6 +1,7 @@
 # coding=utf-8
 # pzw
-# 20231019
+# 20231124
+# v3.2   更新tag寻找算法，提升tag的查询能力
 # v3.1   修复bottom无法找到border的问题
 # v3.0.3 修复部分bug
 # v3.0   解决run不完整的问题
@@ -18,31 +19,27 @@ def searchTag(tagDict, paragraphs):
         if "#[" in p.text and "]#" in p.text:
             tag_name = ""
             run_list = []
-            for r in p.runs:
-                text = r.text.strip()
-                # 如果tag_name不为空以及不是终止
-                if tag_name and not "]#" in text:
-                    tag_name += text
-                    run_list.append(r)
-                else:
-                    # tag_name是空 或 是终止位
+            if (p.text.count("#[") == 1) and (p.text.count("]#") == 1):
+                tag_name = "#[" + p.text.split("#[")[1].split("]#")[0] + "]#"
+                run_list = [run for run in p.runs]
+                tagDict.setdefault(tag_name, []).append([p, run_list])
+            else:
+                for r in p.runs:
+                    text = r.text.strip()
+                    # 找到tag的开头
                     if "#[" in text:
-                        # 此时是完整的tag
-                        if "]#" in text:
-                            tagDict.setdefault(text, []).append([p, [r]])
-                        # 此时仅仅是起始
-                        else:
-                            tag_name = text
-                            run_list = [r]
+                        tag_name = text
+                        run_list = [r]
+                    # 找打tag的结尾，需要重置tag name
                     elif "]#" in text:
-                        # tag_name不为空，同时是结束位置
-                        if tag_name:
-                            tag_name += text
-                            run_list.append(r)
-                            tagDict.setdefault(tag_name, []).append([p, run_list])
-                            # 重新初始化
-                            tag_name = ""
-                            run_list = []
+                        tag_name += text
+                        run_list.append(r)
+                        tagDict.setdefault(tag_name, []).append([p, run_list])
+                        tag_name = ""
+                        run_list = []
+                    elif tag_name:
+                        tag_name += text
+                        run_list.append(r)
 
 # 建立各类tag字典
 ## 遍历模板，从模板中寻找完整的tag
@@ -333,6 +330,9 @@ def remove_ele(ele):
 def WordWriter(inputDocx, outputDocx, replaceDict, logs=True):
     template = Document(inputDocx)
     templateTagDict = searchTemplateTag(template)
+
+    print(templateTagDict)
+
     for k in replaceDict:
         if not k in templateTagDict:
             if logs:
