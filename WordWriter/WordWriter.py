@@ -1,6 +1,7 @@
 # coding=utf-8
 # pzw
 # 20251022
+# v3.4.0 第二阶段重构：代码优化，提取函数，统一命名
 # v3.3.0 第一阶段重构：代码清理，提取常量，统一命名
 # v3.2   更新tag寻找算法，提升tag的查询能力
 # v3.1   修复bottom无法找到border的问题
@@ -27,6 +28,109 @@ from .constants import (
     LogMessage
 )
 
+# ============================================================================
+# 标签搜索辅助函数
+# ============================================================================
+
+def _contains_tag_markers(text: str) -> bool:
+    """检查文本是否包含标签标记
+    
+    Args:
+        text: 要检查的文本
+        
+    Returns:
+        如果包含标签开始和结束标记返回 True
+    """
+    return TagPrefix.TAG_START in text and TagPrefix.TAG_END in text
+
+
+def _is_simple_tag(text: str) -> bool:
+    """判断是否为简单标签（单个完整标签）
+    
+    Args:
+        text: 要判断的文本
+        
+    Returns:
+        如果是简单标签返回 True
+    """
+    return (text.count(TagPrefix.TAG_START) == 1 and 
+            text.count(TagPrefix.TAG_END) == 1)
+
+
+def _extract_tag_name(text: str) -> str:
+    """从文本中提取标签名称
+    
+    Args:
+        text: 包含标签的文本
+        
+    Returns:
+        完整的标签名称，如 "#[name]#"
+    """
+    start_pos = text.find(TagPrefix.TAG_START)
+    end_pos = text.find(TagPrefix.TAG_END, start_pos)
+    if start_pos != -1 and end_pos != -1:
+        return text[start_pos:end_pos + len(TagPrefix.TAG_END)]
+    return ""
+
+
+def _process_simple_tag(tag_dict: Dict[str, List], paragraph: Paragraph) -> None:
+    """处理简单标签（单个完整标签）
+    
+    Args:
+        tag_dict: 标签字典
+        paragraph: 包含标签的段落
+    """
+    tag_name = _extract_tag_name(paragraph.text)
+    if tag_name:
+        run_list = list(paragraph.runs)
+        tag_dict.setdefault(tag_name, []).append([paragraph, run_list])
+
+
+def _process_complex_tag(tag_dict: Dict[str, List], paragraph: Paragraph) -> None:
+    """处理复杂标签（多个标签或跨 run）
+    
+    Args:
+        tag_dict: 标签字典
+        paragraph: 包含标签的段落
+    """
+    tag_parts = []
+    run_list = []
+    
+    for run in paragraph.runs:
+        text = run.text
+        
+        # 检查这个 run 是否包含完整的标签
+        if TagPrefix.TAG_START in text and TagPrefix.TAG_END in text:
+            # 单个 run 中的完整标签
+            tag_name = _extract_tag_name(text)
+            if tag_name:
+                tag_dict.setdefault(tag_name, []).append([paragraph, [run]])
+            # 重置状态，继续寻找下一个标签
+            tag_parts = []
+            run_list = []
+        elif TagPrefix.TAG_START in text:
+            # 找到标签开头（跨 run 的情况）
+            tag_parts = [text]
+            run_list = [run]
+        elif TagPrefix.TAG_END in text:
+            # 找到标签结尾（跨 run 的情况）
+            tag_parts.append(text)
+            run_list.append(run)
+            if tag_parts:
+                tag_name = "".join(tag_parts)  # 使用 join 一次性拼接
+                tag_dict.setdefault(tag_name, []).append([paragraph, run_list])
+            tag_parts = []
+            run_list = []
+        elif tag_parts:
+            # 标签中间部分（跨 run 的情况）
+            tag_parts.append(text)
+            run_list.append(run)
+
+
+# ============================================================================
+# 主要标签搜索函数
+# ============================================================================
+
 # 通用搜索循环
 ## 形成的是类似{tag1: [p, r1, r2, r3], tag2: [p, r1]}这样的字典
 def search_tag(tag_dict: Dict[str, List], paragraphs: List[Paragraph]) -> None:
@@ -44,30 +148,13 @@ def search_tag(tag_dict: Dict[str, List], paragraphs: List[Paragraph]) -> None:
         结果字典格式: {tag_name: [[paragraph, [run1, run2, ...]]]}
     """
     for paragraph in paragraphs:
-        if TagPrefix.TAG_START in paragraph.text and TagPrefix.TAG_END in paragraph.text:
-            tag_name = ""
-            run_list = []
-            if (paragraph.text.count(TagPrefix.TAG_START) == 1) and (paragraph.text.count(TagPrefix.TAG_END) == 1):
-                tag_name = TagPrefix.TAG_START + paragraph.text.split(TagPrefix.TAG_START)[1].split(TagPrefix.TAG_END)[0] + TagPrefix.TAG_END
-                run_list = [run for run in paragraph.runs]
-                tag_dict.setdefault(tag_name, []).append([paragraph, run_list])
-            else:
-                for run in paragraph.runs:
-                    text = run.text.strip()
-                    # 找到tag的开头
-                    if TagPrefix.TAG_START in text:
-                        tag_name = text
-                        run_list = [run]
-                    # 找打tag的结尾，需要重置tag name
-                    elif TagPrefix.TAG_END in text:
-                        tag_name += text
-                        run_list.append(run)
-                        tag_dict.setdefault(tag_name, []).append([paragraph, run_list])
-                        tag_name = ""
-                        run_list = []
-                    elif tag_name:
-                        tag_name += text
-                        run_list.append(run)
+        if not _contains_tag_markers(paragraph.text):
+            continue
+            
+        if _is_simple_tag(paragraph.text):
+            _process_simple_tag(tag_dict, paragraph)
+        else:
+            _process_complex_tag(tag_dict, paragraph)
 
 # 建立各类tag字典
 ## 遍历模板，从模板中寻找完整的tag
@@ -179,46 +266,96 @@ def get_table_bottom_border_details(
         bottom_border_details.append(border_details)
     return bottom_border_details, table_border_details
 
+# ============================================================================
+# 统一边框处理函数
+# ============================================================================
+
+from enum import Enum
+
+class BorderTarget(Enum):
+    """边框目标类型枚举"""
+    CELL = "cell"
+    TABLE = "table"
+
+
+def _get_or_create_borders(target: Any, target_type: BorderTarget) -> OxmlElement:
+    """获取或创建边框元素
+    
+    Args:
+        target: 单元格或表格对象
+        target_type: 目标类型
+        
+    Returns:
+        边框元素
+    """
+    if target_type == BorderTarget.CELL:
+        tcPr = target._tc.get_or_add_tcPr()
+        borders = tcPr.first_child_found_in("w:tcBorders")
+        if borders is None:
+            borders = OxmlElement("w:tcBorders")
+            tcPr.append(borders)
+    else:  # TABLE
+        tblPr = target._tbl.tblPr
+        borders = tblPr.first_child_found_in("w:tblBorders")
+        if borders is None:
+            borders = OxmlElement("w:tblBorders")
+            tblPr.append(borders)
+    return borders
+
+
+def _set_border_attributes(borders: OxmlElement, style_dict: Dict[str, str]) -> None:
+    """设置边框属性
+    
+    Args:
+        borders: 边框元素
+        style_dict: 样式字典
+    """
+    bottom = borders.find(nsqn("w:bottom"))
+    if bottom is None:
+        bottom = OxmlElement("w:bottom")
+        borders.append(bottom)
+    
+    bottom.set(nsqn('w:sz'), style_dict["size"])
+    bottom.set(nsqn('w:color'), style_dict["color"])
+    bottom.set(nsqn('w:space'), style_dict["space"])
+    bottom.set(nsqn('w:val'), style_dict["val"])
+
+
+def set_bottom_border(target: Any, style_dict: Dict[str, str], target_type: BorderTarget) -> None:
+    """统一的底边框设置函数
+    
+    Args:
+        target: 单元格或表格对象
+        style_dict: 样式字典
+        target_type: 目标类型
+    """
+    borders = _get_or_create_borders(target, target_type)
+    _set_border_attributes(borders, style_dict)
+
+
+# ============================================================================
+# 兼容性包装函数
+# ============================================================================
+
 # 设置单元格底线边框格式
 def set_cell_bottom_border(cell: _Cell, styleList: Dict[str, str]) -> None:
-    size = styleList["size"]
-    color = styleList["color"]
-    space = styleList["space"]
-    border_type = styleList["val"]
-    tcPr = cell._tc.get_or_add_tcPr()
-    tc_borders = tcPr.first_child_found_in("w:tcBorders")
-    if tc_borders == None:
-        tc_borders = OxmlElement("w:tcBorders")
-        tcPr.append(tc_borders)
-
-    bottom_border = OxmlElement("w:bottom") if tc_borders.find(nsqn("w:bottom")) == None else tc_borders.find(nsqn("w:bottom"))
+    """设置单元格底边框（兼容包装器）
     
-    # 设置底线边框的属性
-    bottom_border.set(nsqn('w:sz'), size)
-    bottom_border.set(nsqn('w:color'), color)
-    bottom_border.set(nsqn('w:space'), space)
-    bottom_border.set(nsqn('w:val'), border_type)
-    tc_borders.append(bottom_border)
+    Args:
+        cell: 单元格对象
+        styleList: 样式字典
+    """
+    set_bottom_border(cell, styleList, BorderTarget.CELL)
 
 # 设置表格的底线边框格式
 def set_table_bottom_border(table: Table, styleList: Dict[str, str]) -> None:
-    size = styleList["size"]
-    color = styleList["color"]
-    space = styleList["space"]
-    border_type = styleList["val"]
-    tblPr = table._tbl.tblPr
-    tbl_borders = tblPr.first_child_found_in("w:tblBorders")
-    if tbl_borders == None:
-        tbl_borders = OxmlElement("w:tblBorders")
-        tblPr.append(tbl_borders)
-    bottom_border = OxmlElement("w:bottom") if tbl_borders.find(nsqn("w:bottom")) == None else tbl_borders.find(nsqn("w:bottom"))
-
-    # 设置底线边框的属性
-    bottom_border.set(nsqn('w:sz'), size)
-    bottom_border.set(nsqn('w:color'), color)
-    bottom_border.set(nsqn('w:space'), space)
-    bottom_border.set(nsqn('w:val'), border_type)
-    tbl_borders.append(bottom_border)
+    """设置表格底边框（兼容包装器）
+    
+    Args:
+        table: 表格对象
+        styleList: 样式字典
+    """
+    set_bottom_border(table, styleList, BorderTarget.TABLE)
 
 ## 字符串替换，适用于表格单元格中的字符串/页眉页脚字符串/段落字符串
 def replace_paragraph_string(run_list: List[Run], replace_string: str) -> None:
@@ -329,6 +466,78 @@ def fill_table_text_and_style(
         start += 1
         row_id += 1
 
+# ============================================================================
+# 表格填充辅助函数
+# ============================================================================
+
+def _ensure_table_rows(table: Table, start_row: int, required_rows: int) -> None:
+    """确保表格有足够的行数
+    
+    Args:
+        table: 表格对象
+        start_row: 起始行索引
+        required_rows: 需要的行数
+    """
+    current_rows = len(table.rows) - start_row
+    if current_rows < required_rows:
+        rows_to_add = required_rows - current_rows
+        for _ in range(rows_to_add):
+            table.add_row()
+
+
+def _is_row_empty(row: _Row) -> bool:
+    """判断表格行是否为空
+    
+    Args:
+        row: 表格行对象
+        
+    Returns:
+        如果行为空返回 True
+    """
+    for cell in row.cells:
+        for paragraph in cell.paragraphs:
+            if paragraph.text.strip():
+                return False
+    return True
+
+
+def _remove_empty_rows(table: Table) -> None:
+    """删除表格中的所有空行（优化版）
+    
+    Args:
+        table: 表格对象
+    """
+    # 先收集所有空行，避免在遍历时修改
+    empty_rows = [row for row in table.rows if _is_row_empty(row)]
+    
+    # 删除收集到的空行
+    for row in empty_rows:
+        remove_row(table, row)
+
+
+def _apply_border_to_cells(
+    cells: List[_Cell], 
+    border_styles: List[Dict[str, str]], 
+    fallback_style: Dict[str, str]
+) -> None:
+    """应用边框样式到单元格列表
+    
+    Args:
+        cells: 单元格列表
+        border_styles: 边框样式列表
+        fallback_style: 备用样式
+    """
+    if len(cells) != len(border_styles):
+        # 如果长度不匹配，使用第一个样式或备用样式
+        style_to_use = border_styles[0] if border_styles else fallback_style
+        for cell in cells:
+            set_cell_bottom_border(cell, style_to_use)
+    else:
+        # 长度匹配，逐个应用
+        for cell, style in zip(cells, border_styles):
+            set_cell_bottom_border(cell, style)
+
+
 ### 表格插入
 def fill_table(table: Table, row_id: int, cell_id: int, insertTable: str) -> None:
     tableToFill = load_table_from_file(insertTable)
@@ -343,56 +552,36 @@ def fill_table(table: Table, row_id: int, cell_id: int, insertTable: str) -> Non
     lastLineBottomStyle, lastLineTableStyle = get_table_bottom_border_details(table, -1, cell_id)
 
     # 将当前的最后一行的底边样式先处理为正常格式
-    currentLastLine = table.rows[-1].cells[cell_id:]
-    if len(currentLastLine) != len(tagBottomStyle):
-        if len(tagBottomStyle) != 0:
-            set_cell_bottom_border(currentLastLine[c], tagBottomStyle[0])
-    else:
-        for c in range(len(currentLastLine)):
-            set_cell_bottom_border(currentLastLine[c], tagBottomStyle[c])
+    current_last_line = table.rows[-1].cells[cell_id:]
+    _apply_border_to_cells(current_last_line, tagBottomStyle, tagTableStyle)
 
-    # 判断行数是否足够，不够就添加
-    if len(table.rows) - row_id < rowToFill:
-        addRowAmount = rowToFill - len(table.rows) + row_id
-        i = 0
-        while i < addRowAmount:
-            table.add_row()
-            i += 1
+    # 确保表格有足够的行数
+    _ensure_table_rows(table, row_id, rowToFill)
 
     # 填充内容
     fill_table_text_and_style(table, row_id, tableToFill, cell_id, rowToFill, columnToFill, styleList)
     
     # 删除空行
-    for row in table.rows:
-        pString = ""
-        for cell in row.cells:
-            for p in cell.paragraphs:
-                pString = pString + p.text
-        if pString == "":
-            remove_row(table, row)
+    _remove_empty_rows(table)
 
     # 处理表格的边框底线样式
     set_table_bottom_border(table, lastLineTableStyle)
 
     # 处理此时最后一行的边框底线样式
-    newLastLine = table.rows[-1].cells[cell_id:]
-    if len(newLastLine) != len(lastLineBottomStyle):
-        if len(lastLineBottomStyle) != 0:
-            if (lastLineBottomStyle[0]["size"] == "0") and (lastLineBottomStyle[0]["color"] == "auto"):
-                # 这种情况认为是默认状态，那就优先表格底线样式
-                set_cell_bottom_border(newLastLine[c], lastLineTableStyle)
-            else:
-                set_cell_bottom_border(newLastLine[c], lastLineBottomStyle[0])
-    else:
-        for c in range(len(newLastLine)):
-            if (lastLineBottomStyle[0]["size"] == "0") and (lastLineBottomStyle[0]["color"] == "auto"):
-                set_cell_bottom_border(newLastLine[c], lastLineTableStyle)
-            else:
-                set_cell_bottom_border(newLastLine[c], lastLineBottomStyle[c])
+    new_last_line = table.rows[-1].cells[cell_id:]
+    _apply_border_to_cells(new_last_line, lastLineBottomStyle, lastLineTableStyle)
 
 ### 删除元素
 def remove_ele(ele: Any) -> None:
-    if str(type(ele)) == "<class 'docx.oxml.text.paragraph.CT_P'>":
+    """删除文档元素
+    
+    Args:
+        ele: 要删除的元素
+    """
+    from docx.oxml.text.paragraph import CT_P
+    
+    # 使用 isinstance 代替字符串比较，性能更好
+    if isinstance(ele, CT_P):
         ele.getparent().remove(ele)
     else:
         parent = ele._element.getparent()

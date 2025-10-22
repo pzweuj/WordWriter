@@ -2,7 +2,12 @@
 # pzw
 # 20211028
 
-import WordWriter as ww
+# import WordWriter as ww
+
+import sys
+sys.path.insert(0, '..')  # 添加父目录到路径
+from WordWriter import word_writer
+
 
 resultsDict = {}
 resultsDict["#[testheader1]#"] = "测试页眉1"
@@ -17,4 +22,5 @@ resultsDict["#[IMAGE-test2]#"] = "testPicture2.png"
 resultsDict["#[IMAGE-test3-(10,10)]#"] = "testPicture.png"
 resultsDict["#[TABLE-test1]#"] = "testTable.txt"
 
-ww.WordWriter("test.docx", "output.docx", resultsDict)
+# ww.WordWriter("test.docx", "output.docx", resultsDict)
+word_writer("test.docx", "output.docx", resultsDict)
