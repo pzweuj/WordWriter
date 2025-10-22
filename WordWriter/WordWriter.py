@@ -402,15 +402,22 @@ def load_table_from_file(table_file: str) -> pd.DataFrame:
         table_file: tab分隔的文本文件路径
         
     Returns:
-        pandas DataFrame 对象
+        pandas DataFrame 对象，如果文件为空则返回空的 DataFrame
+        
+    Raises:
+        FileNotFoundError: 如果文件不存在
         
     Example:
         >>> df = load_table_from_file("data.txt")
         >>> print(df.shape)
         (10, 5)
     """
-    table = pd.read_csv(table_file, header=None, sep="\t", dtype=str)
-    return table
+    try:
+        table = pd.read_csv(table_file, header=None, sep="\t", dtype=str)
+        return table
+    except pd.errors.EmptyDataError:
+        # 文件为空时返回空的 DataFrame
+        return pd.DataFrame()
 
 ### 删除表格行
 def remove_row(table: Table, row: _Row) -> None:
@@ -543,6 +550,10 @@ def fill_table(table: Table, row_id: int, cell_id: int, insertTable: str) -> Non
     tableToFill = load_table_from_file(insertTable)
     rowToFill = tableToFill.shape[0]
     columnToFill = tableToFill.shape[1]
+    
+    # 如果表格文件为空，直接返回，不做任何处理
+    if rowToFill == 0 or columnToFill == 0:
+        return
 
     # 格式刷
     styleList = table_style_list(table, row_id, cell_id)
