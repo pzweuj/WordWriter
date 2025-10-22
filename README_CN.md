@@ -274,10 +274,6 @@ merge_table_row(table: Table, col_index: int,
                 remove_other_row_text: bool = True) -> None
 ```
 
-## 迁移指南
-
-从 v3.x 升级到 v4.0？查看 [迁移指南](MIGRATION_GUIDE_v4.md)。
-
 ## 常见问题
 
 ### Q: v4.0 与 v3.x 有什么区别？
