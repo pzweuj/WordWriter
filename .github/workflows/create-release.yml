@@ -1,0 +1,41 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # 匹配 v4.0.0, v4.0.1 等
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Extract version from tag
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+    
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: |
+          ## WordWriter ${{ steps.get_version.outputs.VERSION }}
+          
+          ### What's Changed
+          - 请在此处添加更新说明
+          
+          ### Installation
+          ```bash
+          pip install --upgrade WordWriter
+          ```
+          
+          ### Full Changelog
+          https://github.com/${{ github.repository }}/compare/v${{ steps.get_version.outputs.VERSION }}...HEAD
+        draft: false
+        prerelease: false

@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "WordWriter"
+version = "4.0.0"
+description = "A Python library for Word document template processing with OOP API"
+readme = "README.md"
+requires-python = ">=3.6"
+license = {text = "MIT"}
+authors = [
+    {name = "pzweuj", email = "pzweuj@live.com"}
+]
+keywords = ["docx", "word", "template", "document", "office"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Natural Language :: Chinese (Simplified)",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Office/Business",
+    "Topic :: Text Processing",
+]
+dependencies = [
+    "python-docx>=0.8.10",
+    "pandas>=1.0.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/pzweuj/WordWriter"
+"Bug Reports" = "https://github.com/pzweuj/WordWriter/issues"
+Source = "https://github.com/pzweuj/WordWriter"

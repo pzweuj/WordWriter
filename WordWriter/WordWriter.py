@@ -237,7 +237,7 @@ def get_table_bottom_border_details(
 
     # 获取表格的边框格式
     table_borders = table_obj._tbl.tblPr.first_child_found_in("w:tblBorders")
-    if table_borders:
+    if table_borders is not None:
         table_bottom_border = table_borders.find(nsqn("w:bottom"))
         table_border_details = {
             'size': table_bottom_border.get(nsqn('w:sz'), '0'),
