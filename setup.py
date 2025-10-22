@@ -17,7 +17,7 @@ except FileNotFoundError:
 
 setup(
     name='WordWriter',
-    version='4.0.3',
+    version='4.0.4',
     description='A Python library for Word document template processing with OOP API',
     long_description=long_description,
     long_description_content_type='text/markdown',

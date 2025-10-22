@@ -359,13 +359,79 @@ def set_table_bottom_border(table: Table, styleList: Dict[str, str]) -> None:
 
 ## 字符串替换，适用于表格单元格中的字符串/页眉页脚字符串/段落字符串
 def replace_paragraph_string(run_list: List[Run], replace_string: str) -> None:
-    run_list[0].text = replace_string
-    for idx, run in enumerate(run_list):
-        if idx != 0:
-            run.clear()
+    """替换段落中的标签文本，保留标签前后的内容和格式
+    
+    Args:
+        run_list: 包含标签的 run 列表
+        replace_string: 替换的字符串
+    """
+    if not run_list:
+        return
+    
+    # 处理删除段落的特殊情况
     if replace_string == SpecialValue.DELETE_PARAGRAPH:
         paragraph = run_list[0]._element.getparent()
         remove_ele(paragraph)
+        return
+    
+    # 收集所有 run 的文本及其累计位置
+    run_positions = []  # [(run, start_pos, end_pos), ...]
+    current_pos = 0
+    for run in run_list:
+        text_len = len(run.text)
+        run_positions.append((run, current_pos, current_pos + text_len))
+        current_pos += text_len
+    
+    full_text = "".join(run.text for run in run_list)
+    
+    # 查找标签的位置
+    tag_start = full_text.find(TagPrefix.TAG_START)
+    tag_end = full_text.find(TagPrefix.TAG_END, tag_start)
+    
+    if tag_start == -1 or tag_end == -1:
+        # 如果找不到标签，使用旧的行为（向后兼容）
+        run_list[0].text = replace_string
+        for idx, run in enumerate(run_list):
+            if idx != 0:
+                run.clear()
+        return
+    
+    # 计算标签的完整长度
+    tag_end += len(TagPrefix.TAG_END)
+    
+    # 找到标签开始和结束所在的 run
+    tag_start_run_idx = None
+    tag_end_run_idx = None
+    
+    for idx, (run, start_pos, end_pos) in enumerate(run_positions):
+        if tag_start_run_idx is None and start_pos <= tag_start < end_pos:
+            tag_start_run_idx = idx
+        if tag_end_run_idx is None and start_pos < tag_end <= end_pos:
+            tag_end_run_idx = idx
+    
+    # 如果标签在单个 run 中
+    if tag_start_run_idx == tag_end_run_idx:
+        run, start_pos, end_pos = run_positions[tag_start_run_idx]
+        # 计算标签在这个 run 中的相对位置
+        tag_start_in_run = tag_start - start_pos
+        tag_end_in_run = tag_end - start_pos
+        # 替换这个 run 中的标签
+        run.text = run.text[:tag_start_in_run] + replace_string + run.text[tag_end_in_run:]
+    else:
+        # 标签跨越多个 run
+        # 处理第一个 run：保留标签前的内容 + 替换字符串
+        first_run, first_start, first_end = run_positions[tag_start_run_idx]
+        tag_start_in_run = tag_start - first_start
+        first_run.text = first_run.text[:tag_start_in_run] + replace_string
+        
+        # 清空中间的 run
+        for idx in range(tag_start_run_idx + 1, tag_end_run_idx):
+            run_positions[idx][0].text = ""
+        
+        # 处理最后一个 run：保留标签后的内容
+        last_run, last_start, last_end = run_positions[tag_end_run_idx]
+        tag_end_in_run = tag_end - last_start
+        last_run.text = last_run.text[tag_end_in_run:]
 
 ## 图片插入，适用于表格中的图片和段落中的图片
 def insert_picture(run_list: List[Run], tag: str, picture_path: str) -> None:
