@@ -3,9 +3,17 @@
 # 20251022
 
 from setuptools import setup, find_packages
+import os
 
-with open('README.md', 'r', encoding='utf-8') as readme_file:
-    long_description = readme_file.read()
+# 获取 setup.py 所在目录的绝对路径
+here = os.path.abspath(os.path.dirname(__file__))
+
+# 读取 README.md，如果不存在则使用默认描述
+try:
+    with open(os.path.join(here, 'README.md'), 'r', encoding='utf-8') as readme_file:
+        long_description = readme_file.read()
+except FileNotFoundError:
+    long_description = 'A Python library for Word document template processing with OOP API'
 
 setup(
     name='WordWriter',
