@@ -274,10 +274,6 @@ merge_table_row(table: Table, col_index: int,
                 remove_other_row_text: bool = True) -> None
 ```
 
-## Migration Guide
-
-Upgrading from v3.x to v4.0? Check out the [Migration Guide](MIGRATION_GUIDE_v4.md).
-
 ## FAQ
 
 ### Q: What's the difference between v4.0 and v3.x?
