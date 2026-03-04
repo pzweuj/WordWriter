@@ -455,8 +455,8 @@ def insert_picture(run_list: List[Run], tag: str, picture_path: str) -> None:
         for run in run_list:
             run.text = ""
         if "(" in tag and ")" in tag:
-            width = int(tag.split("(")[1].split(",")[0])
-            height = int(tag.split(")")[0].split(",")[1])
+            width = float(tag.split("(")[1].split(",")[0])
+            height = float(tag.split(")")[0].split(",")[1])
             run_list[0].add_picture(picture_path, width*Conversion.CM_TO_EMU, height*Conversion.CM_TO_EMU)
         else:
             run_list[0].add_picture(picture_path)
