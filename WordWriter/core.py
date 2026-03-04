@@ -68,7 +68,7 @@ class TagSearcher:
         
     def _search_headers_footers(self, tag_dict: Dict[str, List]) -> None:
         """搜索页眉页脚中的标签
-        
+
         Args:
             tag_dict: 标签字典
         """
@@ -80,9 +80,29 @@ class TagSearcher:
                 section.footer,
                 section.first_page_footer
             ])
-        
+
         for section_part in sections_list:
+            # 搜索段落
             search_tag(tag_dict, section_part.paragraphs)
+
+            # 搜索表格（新增：支持页眉页脚中的表格）
+            for table in section_part.tables:
+                rows = table.rows
+                for row_idx in range(len(rows)):
+                    cells = rows[row_idx].cells
+                    for col_idx in range(len(cells)):
+                        cell = cells[col_idx]
+
+                        if TagPrefix.TAG_START in cell.text and TagPrefix.TAG_END in cell.text:
+                            if TagPrefix.TABLE in cell.text:
+                                # 表格标签
+                                tag = (TagPrefix.TABLE + "-" +
+                                       cell.text.split(TagPrefix.TABLE + "-")[1].split(TagPrefix.TAG_END)[0] +
+                                       TagPrefix.TAG_END)
+                                tag_dict.setdefault(tag, []).append([table, row_idx, col_idx])
+                            else:
+                                # 单元格中的字符串标签
+                                search_tag(tag_dict, cell.paragraphs)
             
     def _search_paragraphs(self, tag_dict: Dict[str, List]) -> None:
         """搜索段落中的标签

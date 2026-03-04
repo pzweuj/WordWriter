@@ -1,2 +1,4 @@
 docs/
 *.pyc
+WordWriter5/
+.claude/
