@@ -190,7 +190,23 @@ def search_template_tag(document: Document) -> Dict[str, List]:
     for section in document.sections:
         sections_list.extend([section.header, section.first_page_header, section.footer, section.first_page_footer])
     for section_part in sections_list:
+        # 搜索段落
         search_tag(tag_dict, section_part.paragraphs)
+
+        # 搜索表格（新增：支持页眉页脚中的表格）
+        for table in section_part.tables:
+            rows = table.rows
+            for row_idx in range(len(rows)):
+                cells = rows[row_idx].cells
+                for col_idx in range(len(cells)):
+                    cell = cells[col_idx]
+                    if TagPrefix.TAG_START in cell.text and TagPrefix.TAG_END in cell.text:
+                        if TagPrefix.TABLE in cell.text and TagPrefix.TAG_END in cell.text:
+                            tag = TagPrefix.TABLE + "-" + cell.text.split(TagPrefix.TABLE + "-")[1].split(TagPrefix.TAG_END)[0] + TagPrefix.TAG_END
+                            tag_dict.setdefault(tag, []).append([table, row_idx, col_idx])
+                        else:
+                            # 单元格中的字符串tag
+                            search_tag(tag_dict, cell.paragraphs)
 
     ### 段落
     search_tag(tag_dict, document.paragraphs)
